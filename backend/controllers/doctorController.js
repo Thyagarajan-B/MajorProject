@@ -200,8 +200,10 @@ const deleteDoctor = async (req, res) => {
     }
 
     await doctorModel.findByIdAndDelete(docId);
+    res.redirect("/doctor-list");
 
-    res.json({ success: true, message: "Doctor deleted successfully" });
+    // res.json({ success: true, message: "Doctor deleted successfully" });
+    
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
