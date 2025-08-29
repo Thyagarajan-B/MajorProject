@@ -190,6 +190,23 @@ const doctorDashboard = async (req, res) => {
     }
 }
 
+const deleteDoctor = async (req, res) => {
+  try {
+    const docId  = req.params.id;  
+
+    const doctor = await doctorModel.findById(docId);
+    if (!doctor) {
+      return res.status(404).json({ success: false, message: "Doctor not found" });
+    }
+
+    await doctorModel.findByIdAndDelete(docId);
+
+    res.json({ success: true, message: "Doctor deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
 export {
     loginDoctor,
     appointmentsDoctor,
@@ -199,5 +216,6 @@ export {
     appointmentComplete,
     doctorDashboard,
     doctorProfile,
-    updateDoctorProfile
+    updateDoctorProfile,
+    deleteDoctor
 }
