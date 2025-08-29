@@ -71,6 +71,7 @@ const Login = () => {
           <input onChange={(e) => setPassword(e.target.value)} value={password} className='border border-[#DADADA] rounded w-full p-2 mt-1' type="password" required />
         </div>
         <button className='bg-primary text-white w-full py-2 my-2 rounded-md text-base'>{state === 'Sign Up' ? 'Create account' : 'Login'}</button>
+        {/* This button leads to the admin page by changing the URL  */}
         <button
           type="button"
           onClick={() => window.location.href = "http://localhost:5174/"}
