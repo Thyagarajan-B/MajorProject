@@ -14,4 +14,4 @@ adminRouter.get("/all-doctors", authAdmin, allDoctors)
 adminRouter.post("/change-availability", authAdmin, changeAvailablity)
 adminRouter.get("/dashboard", authAdmin, adminDashboard)
 
-export default adminRouter;
+export default adminRouter; 
