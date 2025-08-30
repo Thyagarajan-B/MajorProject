@@ -8,6 +8,7 @@ import { v2 as cloudinary } from 'cloudinary'
 import stripe from "stripe";
 import razorpay from 'razorpay';
 
+
 // Gateway Initialize
 const stripeInstance = new stripe(process.env.STRIPE_SECRET_KEY)
 const razorpayInstance = new razorpay({
@@ -342,6 +343,7 @@ const verifyStripe = async (req, res) => {
     }
 
 }
+
 
 export {
     loginUser,
