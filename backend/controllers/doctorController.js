@@ -190,23 +190,23 @@ const doctorDashboard = async (req, res) => {
     }
 }
 
+// DELETE Doctor API
 const deleteDoctor = async (req, res) => {
-  try {
-    const docId  = req.params.id;  
+    try {
+        const { docId } = req.body; // frontend will send docId in body
 
-    const doctor = await doctorModel.findById(docId);
-    if (!doctor) {
-      return res.status(404).json({ success: false, message: "Doctor not found" });
+        const doctor = await doctorModel.findById(docId);
+        if (!doctor) {
+            return res.status(404).json({ success: false, message: "Doctor not found" });
+        }
+
+        await doctorModel.findByIdAndDelete(docId);
+
+        res.json({ success: true, message: "Doctor deleted successfully" });
+
+    } catch (err) {
+        res.status(500).json({ success: false, message: err.message });
     }
-
-    await doctorModel.findByIdAndDelete(docId);
-    res.redirect("/doctor-list");
-
-    // res.json({ success: true, message: "Doctor deleted successfully" });
-    
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
 };
 
 export {
