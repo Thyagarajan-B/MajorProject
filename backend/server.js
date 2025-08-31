@@ -20,11 +20,11 @@ connectCloudinary()
 app.use(express.json())
 app.use(cors())
 app.use(express.json());
-app.use(express.urlencoded({extended:true}))
+app.use(express.urlencoded({ extended: true }))
 app.use(expressSession({
   secret: process.env.EXPRESS_SECRET,
   resave: false,
-  saveUninitialized: false 
+  saveUninitialized: false
 }));
 
 app.use(passport.initialize());
