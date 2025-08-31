@@ -17,7 +17,7 @@ const port = process.env.PORT || 4000
 connectDB()
 connectCloudinary()
 
-// middlewares
+
 app.use(
   expressSession({
     secret: process.env.EXPRESS_SECRET, // required!
@@ -29,6 +29,7 @@ app.use(
     },
   })
 );
+
 
 app.use(passport.initialize());
 app.use(passport.session());
