@@ -17,8 +17,15 @@ userRouter.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/login" }),
   (req, res) => {
+    
+    // Just to verify:
+    res.json({
+      success: true,
+      message: "Google Authentication successful",
+      user:req.user,   // you’ll see id, name, email, picture, etc.
+    });
     // Redirect to frontend after successful login
-    res.redirect("http://localhost:5173/dashboard");
+    // res.redirect("http://localhost:5173/dashboard");
   }
 );
 
