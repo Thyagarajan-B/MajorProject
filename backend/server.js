@@ -1,6 +1,7 @@
 import express from "express"
 import cors from 'cors'
 import 'dotenv/config'
+import bodyParser from "body-parser";
 import expressSession from "express-session"
 import passport from "passport"
 import connectDB from "./config/mongodb.js"
@@ -30,9 +31,11 @@ app.use(
   })
 );
 
-
+app.use(cors());
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 // api endpoints
 app.use("/api/user", userRouter)
 app.use("/api/admin", adminRouter)

@@ -38,7 +38,7 @@ const registerUser = async (req, res) => {
         }
 
         // hashing user password
-        const salt = await bcrypt.genSalt(10); // the more no. round the more time it will take
+        const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt)
 
         const userData = {
@@ -89,7 +89,7 @@ const loginUser = async (req, res) => {
 const getProfile = async (req, res) => {
 
     try {
-        const { userId } = req.body
+        const userId = req.userId
         const userData = await userModel.findById(userId).select('-password')
 
         res.json({ success: true, userData })
@@ -225,7 +225,7 @@ const cancelAppointment = async (req, res) => {
 const listAppointment = async (req, res) => {
     try {
 
-        const { userId } = req.body
+        const userId = req.userId
         const appointments = await appointmentModel.find({ userId })
 
         res.json({ success: true, appointments })
