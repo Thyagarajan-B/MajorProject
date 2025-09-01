@@ -1,0 +1,20 @@
+Responsive - mobiles, PC, Tablet
+Admin Panel - add doctor, doctor login(earnings, clients), doctor can accept, delete request
+Website - Login, register, appointment(date, time, payment), all doctors are bifurcated
+
+------------------------------------------------------------------------------------------------
+Yet to come:
+
+Joi Validation, Google auth, notifications (GMAIL,SMS) - appointment remainders, prescription ready
+frontend changes - UI components, bifurcated login(patient, doctor, admin)
+
+Patient medical history Dashboard
+some static content for First Aid
+Feedback form and dynamic testimonial and some static testimonial
+
+Main AI feature:
+when user books a doctor he should tell about his symptoms so that it will be stored in the DB and used by GEMNI to recommend or suggest medications, 
+At the doctor side:
+Shows suggestions in a panel: “AI Recommendations”.
+Doctor can accept, edit, or ignore.
+Final decision always saved as doctor’s prescription, not Gemini’s.
