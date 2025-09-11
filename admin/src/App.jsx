@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useContext } from 'react'
 import { DoctorContext } from './context/DoctorContext';
 import { AdminContext } from './context/AdminContext';
