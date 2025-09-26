@@ -1,5 +1,5 @@
 import express from 'express';
-import { loginUser, registerUser, getProfile , updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay, paymentStripe, verifyStripe } from '../controllers/userController.js';
+import { loginUser, registerUser, getProfile, updateProfile, bookAppointment, listAppointment, cancelAppointment, paymentRazorpay, verifyRazorpay, paymentStripe, verifyStripe } from '../controllers/userController.js';
 import upload from '../middleware/multer.js';
 import authUser from '../middleware/authUser.js';
 // import passport from "passport"
@@ -17,7 +17,7 @@ userRouter.post("/login", loginUser)
 //   "/google/callback",
 //   passport.authenticate("google", { failureRedirect: "/login" }),
 //   (req, res) => {
-    
+
 //     // Just to verify:
 //     res.json({
 //       success: true,

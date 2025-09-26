@@ -134,9 +134,9 @@ const updateProfile = async (req, res) => {
 // API to book appointment 
 const bookAppointment = async (req, res) => {
     try {
-        const { userId, docId, slotDate, slotTime } = req.body;
+        const userId = req.userId;
+        const { docId, slotDate, slotTime } = req.body;
 
-        // ✅ Early validation
         if (!userId || !docId || !slotDate || !slotTime) {
             return res.status(400).json({
                 success: false,
@@ -144,7 +144,6 @@ const bookAppointment = async (req, res) => {
             });
         }
 
-        // ✅ Fetch doctor
         const docData = await doctorModel.findById(docId).select("-password");
         if (!docData) {
             return res.status(404).json({ success: false, message: "Doctor not found" });
