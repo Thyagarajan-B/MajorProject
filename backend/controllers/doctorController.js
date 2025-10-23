@@ -188,7 +188,6 @@ const editPrescription = async (req, res) => {
     try {
         const { appointmentId, docId, entryIndex, text } = req.body;
         const imagePaths = req.files ? req.files.map((f) => f.path) : [];
-        console.log("From edit", appointmentId);
 
         const appointment = await appointmentModel.findById(appointmentId);
         if (!appointment)
@@ -197,17 +196,22 @@ const editPrescription = async (req, res) => {
         if (appointment.docId.toString() !== docId.toString())
             return res.json({ success: false, message: "Unauthorized doctor" });
 
-        const entries = appointment.prescription?.entries || [];
-        if (entryIndex < 0 || entryIndex >= entries.length)
-            return res.json({ success: false, message: "Invalid entry index" });
+        if (!appointment.prescription || !Array.isArray(appointment.prescription.entries))
+            return res.json({ success: false, message: "No prescription entries found" });
 
-        // update text/images
-        if (text && text.trim() !== "") entries[entryIndex].text = text.trim();
-        if (imagePaths.length > 0)
-            entries[entryIndex].images.push(...imagePaths);
+        const entries = appointment.prescription.entries;
+        const index = parseInt(entryIndex);
+        if (isNaN(index) || index < 0 || index >= entries.length)
+            return res.json({
+                success: false,
+                message: `Invalid entry index: ${entryIndex}. Total entries: ${entries.length}`,
+            });
+            
+        if (text && text.trim() !== "") entries[index].text = text.trim();
+        if (imagePaths.length > 0) entries[index].images.push(...imagePaths);
 
-        entries[entryIndex].isEdited = true;
-        entries[entryIndex].updatedAt = new Date();
+        entries[index].isEdited = true;
+        entries[index].updatedAt = new Date();
 
         await appointment.save();
 
@@ -221,6 +225,7 @@ const editPrescription = async (req, res) => {
         res.json({ success: false, message: error.message });
     }
 };
+
 
 
 
