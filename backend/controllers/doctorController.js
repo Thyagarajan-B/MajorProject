@@ -148,6 +148,82 @@ const updateDoctorProfile = async (req, res) => {
     }
 }
 
+const addPrescription = async (req, res) => {
+    try {
+        const { appointmentId, docId, text } = req.body;
+        const imagePaths = req.files ? req.files.map((f) => f.path) : [];
+        console.log("From add", appointmentId);
+
+        const appointment = await appointmentModel.findById(appointmentId);
+        if (!appointment)
+            return res.json({ success: false, message: "Appointment not found" });
+
+        if (appointment.docId.toString() !== docId.toString())
+            return res.json({ success: false, message: "Unauthorized doctor" });
+
+        const newEntry = {
+            text: text || "",
+            images: imagePaths,
+        };
+
+        if (!appointment.prescription) appointment.prescription = { entries: [] };
+        appointment.prescription.entries.push(newEntry);
+
+        await appointment.save();
+
+        res.json({
+            success: true,
+            message: "New prescription added",
+            appointment,
+        });
+    } catch (error) {
+        console.error("Add Prescription Error:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+
+// Edit Prescpription
+const editPrescription = async (req, res) => {
+    try {
+        const { appointmentId, docId, entryIndex, text } = req.body;
+        const imagePaths = req.files ? req.files.map((f) => f.path) : [];
+        console.log("From edit", appointmentId);
+
+        const appointment = await appointmentModel.findById(appointmentId);
+        if (!appointment)
+            return res.json({ success: false, message: "Appointment not found" });
+
+        if (appointment.docId.toString() !== docId.toString())
+            return res.json({ success: false, message: "Unauthorized doctor" });
+
+        const entries = appointment.prescription?.entries || [];
+        if (entryIndex < 0 || entryIndex >= entries.length)
+            return res.json({ success: false, message: "Invalid entry index" });
+
+        // update text/images
+        if (text && text.trim() !== "") entries[entryIndex].text = text.trim();
+        if (imagePaths.length > 0)
+            entries[entryIndex].images.push(...imagePaths);
+
+        entries[entryIndex].isEdited = true;
+        entries[entryIndex].updatedAt = new Date();
+
+        await appointment.save();
+
+        res.json({
+            success: true,
+            message: "Prescription updated successfully",
+            appointment,
+        });
+    } catch (error) {
+        console.error("Edit Prescription Error:", error);
+        res.json({ success: false, message: error.message });
+    }
+};
+
+
+
 // API to get dashboard data for doctor panel
 const doctorDashboard = async (req, res) => {
     try {
@@ -217,6 +293,8 @@ export {
     appointmentComplete,
     doctorDashboard,
     doctorProfile,
+    addPrescription,
+    editPrescription,
     updateDoctorProfile,
     deleteDoctor
 }
