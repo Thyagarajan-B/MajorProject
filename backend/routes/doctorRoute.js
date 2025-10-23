@@ -12,8 +12,8 @@ doctorRouter.post("/change-availability", authDoctor, changeAvailablity)
 doctorRouter.post("/complete-appointment", authDoctor, appointmentComplete)
 doctorRouter.get("/dashboard", authDoctor, doctorDashboard)
 doctorRouter.get("/profile", authDoctor, doctorProfile)
-doctorRouter.post("/add-prescription", authDoctor, upload.array('images'), addPrescription)
-doctorRouter.post("/edit-prescription", authDoctor, editPrescription)
+doctorRouter.post("/add-prescription", authDoctor, upload.array("images", 5), addPrescription)
+doctorRouter.post("/edit-prescription", authDoctor, upload.array("images", 5), editPrescription)
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile)
 doctorRouter.delete("/delete-doctor/:id", deleteDoctor);
 
