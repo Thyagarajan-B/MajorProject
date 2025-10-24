@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import  { useContext, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AppContext } from '../context/AppContext'
 import { assets } from '../assets/assets'
@@ -86,37 +86,39 @@ const Appointment = () => {
     }
 
     const bookAppointment = async () => {
-
         if (!token) {
             toast.warning('Login to book appointment')
             return navigate('/login')
         }
 
-        const date = docSlots[slotIndex][0].datetime
-
-        let day = date.getDate()
-        let month = date.getMonth() + 1
-        let year = date.getFullYear()
-
-        const slotDate = day + "_" + month + "_" + year
-
-        try {
-
-            const { data } = await axios.post(backendUrl + '/api/user/book-appointment', { docId, slotDate, slotTime }, { headers: { token } })
-            if (data.success) {
-                toast.success(data.message)
-                getDoctosData()
-                navigate('/my-appointments')
-            } else {
-                toast.error(data.message)
-            }
-
-        } catch (error) {
-            console.log(error)
-            toast.error(error.message)
+        if (!slotTime) {
+            toast.error("Please select a time slot before booking");
+            return;
         }
 
-    }
+        const date = docSlots[slotIndex][0].datetime;
+        const slotDate = `${date.getDate()}_${date.getMonth() + 1}_${date.getFullYear()}`;
+
+        try {
+            const { data } = await axios.post(
+                backendUrl + '/api/user/book-appointment',
+                { docId, slotDate, slotTime },
+                { headers: { token } }
+            );
+
+            if (data.success) {
+                toast.success(data.message);
+                getDoctosData();
+                navigate('/my-appointments');
+            } else {
+                toast.error(data.message);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error(error.response?.data?.message || error.message);
+        }
+    };
+
 
     useEffect(() => {
         if (doctors.length > 0) {

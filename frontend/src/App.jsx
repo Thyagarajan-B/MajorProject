@@ -1,3 +1,4 @@
+// eslint-disable-next-line no-unused-vars
 import React from 'react'
 import Navbar from './components/Navbar'
 import { Routes, Route } from 'react-router-dom'
@@ -13,6 +14,7 @@ import Footer from './components/Footer'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Verify from './pages/Verify'
+import AuthCallback from './pages/AuthCallback'
 
 const App = () => {
   return (
@@ -30,6 +32,7 @@ const App = () => {
         <Route path='/my-appointments' element={<MyAppointments />} />
         <Route path='/my-profile' element={<MyProfile />} />
         <Route path='/verify' element={<Verify />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
       </Routes>
       <Footer />
     </div>

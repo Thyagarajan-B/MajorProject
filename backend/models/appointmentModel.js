@@ -1,4 +1,12 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
+
+const prescriptionEntrySchema = new mongoose.Schema({
+    text: { type: String },
+    images: [String],
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: null },
+    isEdited: { type: Boolean, default: false },
+});
 
 const appointmentSchema = new mongoose.Schema({
     userId: { type: String, required: true },
@@ -11,10 +19,14 @@ const appointmentSchema = new mongoose.Schema({
     date: { type: Number, required: true },
     cancelled: { type: Boolean, default: false },
     payment: { type: Boolean, default: false },
-    isCompleted: { type: Boolean, default: false }
-})
+    isCompleted: { type: Boolean, default: false },
+    prescription: {
+        entries: [prescriptionEntrySchema],
+    },
+});
 
-const appointmentModel = mongoose.models.appointment || mongoose.model("appointment", appointmentSchema)
-export default appointmentModel
+const appointmentModel =
+    mongoose.models.appointment ||
+    mongoose.model("appointment", appointmentSchema);
 
-// this is a comment
+export default appointmentModel;

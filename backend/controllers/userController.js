@@ -133,59 +133,74 @@ const updateProfile = async (req, res) => {
 
 // API to book appointment 
 const bookAppointment = async (req, res) => {
-
     try {
+        const userId = req.userId;
+        const { docId, slotDate, slotTime } = req.body;
 
-        const { userId, docId, slotDate, slotTime } = req.body
-        const docData = await doctorModel.findById(docId).select("-password")
+        if (!userId || !docId || !slotDate || !slotTime) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields (userId, docId, slotDate, slotTime)",
+            });
+        }
+
+        const docData = await doctorModel.findById(docId).select("-password");
+        if (!docData) {
+            return res.status(404).json({ success: false, message: "Doctor not found" });
+        }
 
         if (!docData.available) {
-            return res.json({ success: false, message: 'Doctor Not Available' })
+            return res.json({ success: false, message: "Doctor Not Available" });
         }
 
-        let slots_booked = docData.slots_booked
+        let slots_booked = docData.slots_booked || {};
 
-        // checking for slot availablity 
+        // ✅ Check slot availability
         if (slots_booked[slotDate]) {
             if (slots_booked[slotDate].includes(slotTime)) {
-                return res.json({ success: false, message: 'Slot Not Available' })
-            }
-            else {
-                slots_booked[slotDate].push(slotTime)
+                return res.json({ success: false, message: "Slot Not Available" });
+            } else {
+                slots_booked[slotDate].push(slotTime);
             }
         } else {
-            slots_booked[slotDate] = []
-            slots_booked[slotDate].push(slotTime)
+            slots_booked[slotDate] = [slotTime];
         }
 
-        const userData = await userModel.findById(userId).select("-password")
+        // ✅ Fetch user
+        const userData = await userModel.findById(userId).select("-password");
+        if (!userData) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
 
-        delete docData.slots_booked
+        // ✅ Clone doctorData (remove slots_booked without mutating original docData)
+        const { slots_booked: _, ...doctorInfo } = docData.toObject();
 
         const appointmentData = {
             userId,
             docId,
             userData,
-            docData,
+            docData: doctorInfo,
             amount: docData.fees,
             slotTime,
             slotDate,
-            date: Date.now()
-        }
+            date: Date.now(),
+        };
 
-        const newAppointment = new appointmentModel(appointmentData)
-        await newAppointment.save()
+        // ✅ Save appointment
+        const newAppointment = new appointmentModel(appointmentData);
+        await newAppointment.save();
 
         // save new slots data in docData
         await doctorModel.findByIdAndUpdate(docId, { slots_booked })
-        res.json({ success: true, message: 'Appointment Booked and Email Sent' })
+
+        res.json({ success: true, message: 'Appointment Booked' })
 
     } catch (error) {
-        console.log(error)
-        res.json({ success: false, message: error.message })
+        console.log(error);
+        res.json({ success: false, message: error.message });
     }
+};
 
-}
 
 // API to cancel appointment
 const cancelAppointment = async (req, res) => {
