@@ -36,9 +36,9 @@
 		{
 			"id": "pointer:pointer",
 			"typeName": "pointer",
-			"x": -352.03440397487066,
-			"y": -81.89469142104568,
-			"lastActivityTimestamp": 1758606578064,
+			"x": -456.38524527939285,
+			"y": 777.6434687078206,
+			"lastActivityTimestamp": 1761242716475,
 			"meta": {}
 		},
 		{
@@ -111,9 +111,9 @@
 			"typeName": "shape"
 		},
 		{
-			"x": 662.5016105054625,
-			"y": 318.58790408706403,
-			"z": 0.45630151434425814,
+			"x": 646.1532219303833,
+			"y": -205.3032454298347,
+			"z": 0.4391327627934104,
 			"meta": {},
 			"id": "camera:page:page",
 			"typeName": "camera"
@@ -181,12 +181,12 @@
 			"typeName": "binding"
 		},
 		{
-			"editingShapeId": null,
+			"editingShapeId": "shape:uZ5d_sRmDoZ679VnP6ugb",
 			"croppingShapeId": null,
 			"selectedShapeIds": [
-				"shape:IUWULFhgccwdwsSxKBogU"
+				"shape:uZ5d_sRmDoZ679VnP6ugb"
 			],
-			"hoveredShapeId": "shape:IUWULFhgccwdwsSxKBogU",
+			"hoveredShapeId": "shape:uZ5d_sRmDoZ679VnP6ugb",
 			"erasingShapeIds": [],
 			"hintingShapeIds": [],
 			"focusedGroupId": null,
@@ -315,6 +315,45 @@
 			},
 			"parentId": "page:page",
 			"index": "aAUxF7ml",
+			"typeName": "shape"
+		},
+		{
+			"x": -456.38524527939285,
+			"y": 761.4455507695882,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:uZ5d_sRmDoZ679VnP6ugb",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 370.9895935058594,
+				"font": "draw",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"attrs": {
+								"dir": "auto"
+							},
+							"content": [
+								{
+									"type": "text",
+									"text": "Next move on to AI featuress"
+								}
+							]
+						}
+					]
+				}
+			},
+			"parentId": "page:page",
+			"index": "aI4LoAcV",
 			"typeName": "shape"
 		},
 		{
@@ -743,8 +782,8 @@
 			"screenBounds": {
 				"x": 0,
 				"y": 0,
-				"w": 1018.333251953125,
-				"h": 484.9999694824219
+				"w": 932,
+				"h": 605.3333740234375
 			},
 			"insets": [
 				false,
@@ -759,7 +798,7 @@
 			"isChatting": false,
 			"highlightedUserIds": [],
 			"isFocused": true,
-			"devicePixelRatio": 1.8000000715255737,
+			"devicePixelRatio": 1.5,
 			"isCoarsePointer": false,
 			"isHoveringCanvas": true,
 			"openMenus": [],
@@ -770,6 +809,45 @@
 			"id": "instance:instance",
 			"currentPageId": "page:page",
 			"typeName": "instance"
+		},
+		{
+			"x": -347.0788766904108,
+			"y": -347.3686548239841,
+			"rotation": 0,
+			"isLocked": false,
+			"opacity": 1,
+			"meta": {},
+			"id": "shape:fY_OU4YAsWm3-iuLj7TQe",
+			"type": "text",
+			"props": {
+				"color": "black",
+				"size": "m",
+				"w": 238.125,
+				"font": "draw",
+				"textAlign": "start",
+				"autoSize": true,
+				"scale": 1,
+				"richText": {
+					"type": "doc",
+					"content": [
+						{
+							"type": "paragraph",
+							"attrs": {
+								"dir": "auto"
+							},
+							"content": [
+								{
+									"type": "text",
+									"text": "Donee with this ✅"
+								}
+							]
+						}
+					]
+				}
+			},
+			"parentId": "page:page",
+			"index": "aHSg6m7V",
+			"typeName": "shape"
 		},
 		{
 			"x": -487.30669708740277,

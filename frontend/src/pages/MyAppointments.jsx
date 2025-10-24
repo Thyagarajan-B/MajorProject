@@ -14,7 +14,10 @@ const MyAppointments = () => {
 
     const [appointments, setAppointments] = useState([]);
     const [payment, setPayment] = useState("");
-    const [selectedPrescription, setSelectedPrescription] = useState(null)
+    const [selectedPrescription, setSelectedPrescription] = useState(null);
+    const [aiSummary, setAiSummary] = useState("");
+    const [showAiModal, setShowAiModal] = useState(false);
+    const [loadingAi, setLoadingAi] = useState(false);
 
     const months = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -190,6 +193,25 @@ const MyAppointments = () => {
         document.body.removeChild(tempDiv);
     };
 
+    const handleAISummary = async (prescription) => {
+        try {
+            setLoadingAi(true);
+            setShowAiModal(true);
+            const fullText = prescription.entries.map((e) => e.text).join("\n\n");
+            console.log(fullText)
+            const { data } = await axios.post(
+                `${backendUrl}/api/ai/explain-prescription`,
+                { prescriptionText: fullText }
+            );
+            console.log(data)
+            setAiSummary(data.explanation);
+        } catch (error) {
+            console.log(error);
+            toast.error("AI summary failed");
+        } finally {
+            setLoadingAi(false);
+        }
+    };
 
     return (
         <div>
@@ -258,9 +280,6 @@ const MyAppointments = () => {
                                     </div>
                                 </div>
                             )}
-
-
-
                         </div>
 
                         {/* Actions Section */}
@@ -336,7 +355,7 @@ const MyAppointments = () => {
                     </div>
                 ))}
             </div>
-            
+
             {/* Modal for Viewing Prescription */}
             {selectedPrescription && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
@@ -370,9 +389,17 @@ const MyAppointments = () => {
                             </div>
                         ))}
 
+                        {/* ✅ New AI Summary Button */}
+                        <button
+                            onClick={() => handleAISummary(selectedPrescription)}
+                            className="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
+                        >
+                            Generate AI Summary
+                        </button>
+
                         <button
                             onClick={() => setSelectedPrescription(null)}
-                            className="mt-4 bg-primary text-white px-3 py-1 rounded text-sm w-full"
+                            className="mt-2 bg-primary text-white px-3 py-1 rounded text-sm w-full"
                         >
                             Close
                         </button>
@@ -380,7 +407,29 @@ const MyAppointments = () => {
                 </div>
             )}
 
+            {/* ✅ AI Summary Modal */}
+            {showAiModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+                    <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[450px] max-h-[70vh] overflow-y-auto">
+                        <h3 className="text-lg font-semibold mb-3 text-center text-purple-700">
+                            AI Prescription Summary
+                        </h3>
 
+                        {loadingAi ? (
+                            <p className="text-center text-gray-500">🧠 Generating summary...</p>
+                        ) : (
+                            <p className="text-gray-700 whitespace-pre-wrap">{aiSummary}</p>
+                        )}
+
+                        <button
+                            onClick={() => setShowAiModal(false)}
+                            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
