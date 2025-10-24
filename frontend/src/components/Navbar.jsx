@@ -1,77 +1,186 @@
-import React, { useContext, useState } from 'react'
-import { assets } from '../assets/assets'
-import { NavLink, useNavigate } from 'react-router-dom'
-import { AppContext } from '../context/AppContext'
+import React, { useContext, useState } from 'react';
+import { assets } from '../assets/assets';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { AppContext } from '../context/AppContext';
 
 const Navbar = () => {
-
-  const navigate = useNavigate()
-
-  const [showMenu, setShowMenu] = useState(false)
-  const { token, setToken, userData } = useContext(AppContext)
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [showMenu, setShowMenu] = useState(false);
+  const { token, setToken, userData } = useContext(AppContext);
 
   const logout = () => {
-    localStorage.removeItem('token')
-    setToken(false)
-    navigate('/login')
+    localStorage.removeItem('token');
+    setToken(false);
+    navigate('/login');
+  };
+
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
+
+  // Only show logo on auth pages
+  if (isAuthPage) {
+    return (
+      <header className="w-full bg-white border-b border-gray-200 shadow-sm py-4 flex justify-center sm:justify-start px-4 sm:px-8">
+        <img
+          onClick={() => navigate('/')}
+          src={assets.logo}
+          alt="CareConnect Logo"
+          className="w-32 sm:w-44 cursor-pointer object-contain"
+        />
+      </header>
+    );
   }
 
   return (
-    <div className='flex items-center justify-between text-sm py-4 mb-5 border-b border-b-[#ADADAD]'>
-      <img onClick={() => navigate('/')} className='w-44 cursor-pointer' src={assets.logo} alt="" />
-      <ul className='md:flex items-start gap-5 font-medium hidden'>
-        <NavLink to='/' >
-          <li className='py-1'>HOME</li>
-          <hr className='border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden' />
+    <nav className="w-full flex items-center justify-between py-4 px-4 sm:px-8 border-b border-gray-200 bg-white shadow-sm">
+      {/* Logo */}
+      <img
+        onClick={() => navigate('/')}
+        src={assets.logo}
+        alt="CareConnect Logo"
+        className="w-32 sm:w-44 cursor-pointer object-contain"
+      />
+
+      {/* Desktop Menu */}
+      <ul className="hidden md:flex items-center gap-8 font-medium text-gray-700">
+        <NavLink to="/" className="hover:text-primary transition">
+          <li>HOME</li>
         </NavLink>
-        <NavLink to='/doctors' >
-          <li className='py-1'>ALL DOCTORS</li>
-          <hr className='border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden' />
+        <NavLink to="/doctors" className="hover:text-primary transition">
+          <li>ALL DOCTORS</li>
         </NavLink>
-        <NavLink to='/about' >
-          <li className='py-1'>ABOUT</li>
-          <hr className='border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden' />
+        <NavLink to="/about" className="hover:text-primary transition">
+          <li>ABOUT</li>
         </NavLink>
-        <NavLink to='/contact' >
-          <li className='py-1'>CONTACT</li>
-          <hr className='border-none outline-none h-0.5 bg-primary w-3/5 m-auto hidden' />
+        <NavLink to="/contact" className="hover:text-primary transition">
+          <li>CONTACT</li>
         </NavLink>
       </ul>
 
-      <div className='flex items-center gap-4 '>
-        {
-          token && userData
-            ? <div className='flex items-center gap-2 cursor-pointer group relative'>
-              <img className='w-8 rounded-full' src={userData.image} alt="" />
-              <img className='w-2.5' src={assets.dropdown_icon} alt="" />
-              <div className='absolute top-0 right-0 pt-14 text-base font-medium text-gray-600 z-20 hidden group-hover:block'>
-                <div className='min-w-48 bg-gray-50 rounded flex flex-col gap-4 p-4'>
-                  <p onClick={() => navigate('/my-profile')} className='hover:text-black cursor-pointer'>My Profile</p>
-                  <p onClick={() => navigate('/my-appointments')} className='hover:text-black cursor-pointer'>My Appointments</p>
-                  <p onClick={logout} className='hover:text-black cursor-pointer'>Logout</p>
-                </div>
-              </div>
-            </div>
-            : <button onClick={() => navigate('/login')} className='bg-primary text-white px-8 py-3 rounded-full font-light hidden md:block'>Create account</button>
-        }
-        <img onClick={() => setShowMenu(true)} className='w-6 md:hidden' src={assets.menu_icon} alt="" />
+      {/* Right Side */}
+      <div className="flex items-center gap-4">
+        {token && userData ? (
+          <div className="relative group flex items-center gap-2 cursor-pointer">
+            <img
+              src={userData.image || assets.default_user}
+              alt="User"
+              className="w-8 h-8 rounded-full object-cover border"
+            />
+            <img src={assets.dropdown_icon} alt="Dropdown" className="w-2.5" />
 
-        {/* ---- Mobile Menu ---- */}
-        <div className={`md:hidden ${showMenu ? 'fixed w-full' : 'h-0 w-0'} right-0 top-0 bottom-0 z-20 overflow-hidden bg-white transition-all`}>
-          <div className='flex items-center justify-between px-5 py-6'>
-            <img src={assets.logo} className='w-36' alt="" />
-            <img onClick={() => setShowMenu(false)} src={assets.cross_icon} className='w-7' alt="" />
+            {/* Dropdown */}
+            <div className="absolute top-14 right-0 hidden group-hover:block bg-white border rounded-lg shadow-md text-gray-600 text-sm w-48 py-2 z-20">
+              <p
+                onClick={() => navigate('/my-profile')}
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              >
+                My Profile
+              </p>
+              <p
+                onClick={() => navigate('/my-appointments')}
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+              >
+                My Appointments
+              </p>
+              <p
+                onClick={logout}
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-red-500 font-medium"
+              >
+                Logout
+              </p>
+            </div>
           </div>
-          <ul className='flex flex-col items-center gap-2 mt-5 px-5 text-lg font-medium'>
-            <NavLink onClick={() => setShowMenu(false)} to='/'><p className='px-4 py-2 rounded full inline-block'>HOME</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/doctors' ><p className='px-4 py-2 rounded full inline-block'>ALL DOCTORS</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/about' ><p className='px-4 py-2 rounded full inline-block'>ABOUT</p></NavLink>
-            <NavLink onClick={() => setShowMenu(false)} to='/contact' ><p className='px-4 py-2 rounded full inline-block'>CONTACT</p></NavLink>
-          </ul>
+        ) : (
+          <div className="hidden md:flex gap-3">
+            <button
+              onClick={() => navigate('/login')}
+              className="bg-primary text-white px-5 py-2 rounded-full font-medium hover:bg-primary/90 transition"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              className="bg-green-500 text-white px-5 py-2 rounded-full font-medium hover:bg-green-600 transition"
+            >
+              Create Account
+            </button>
+          </div>
+        )}
+
+        {/* Mobile Menu Icon */}
+        <img
+          onClick={() => setShowMenu(true)}
+          src={assets.menu_icon}
+          alt="Menu"
+          className="w-6 md:hidden cursor-pointer"
+        />
+      </div>
+
+      {/* Mobile Menu Drawer */}
+      <div
+        className={`fixed top-0 right-0 h-full bg-white z-40 shadow-lg transition-all duration-300 overflow-hidden ${
+          showMenu ? 'w-64' : 'w-0'
+        }`}
+      >
+        <div className="flex items-center justify-between px-5 py-6 border-b">
+          <img src={assets.logo} className="w-32 object-contain" alt="Logo" />
+          <img
+            onClick={() => setShowMenu(false)}
+            src={assets.cross_icon}
+            className="w-7 cursor-pointer"
+            alt="Close"
+          />
+        </div>
+
+        <ul className="flex flex-col items-start gap-4 mt-6 px-6 font-medium text-gray-700">
+          <NavLink onClick={() => setShowMenu(false)} to="/" className="hover:text-primary w-full">
+            HOME
+          </NavLink>
+          <NavLink onClick={() => setShowMenu(false)} to="/doctors" className="hover:text-primary w-full">
+            ALL DOCTORS
+          </NavLink>
+          <NavLink onClick={() => setShowMenu(false)} to="/about" className="hover:text-primary w-full">
+            ABOUT
+          </NavLink>
+          <NavLink onClick={() => setShowMenu(false)} to="/contact" className="hover:text-primary w-full">
+            CONTACT
+          </NavLink>
+        </ul>
+
+        <div className="mt-8 px-6 flex flex-col gap-3">
+          {token ? (
+            <button
+              onClick={logout}
+              className="w-full bg-red-500 text-white py-2 rounded-lg font-medium hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  navigate('/login');
+                  setShowMenu(false);
+                }}
+                className="w-full bg-primary text-white py-2 rounded-lg font-medium hover:bg-primary/90 transition"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => {
+                  navigate('/register');
+                  setShowMenu(false);
+                }}
+                className="w-full bg-green-500 text-white py-2 rounded-lg font-medium hover:bg-green-600 transition"
+              >
+                Create Account
+              </button>
+            </>
+          )}
         </div>
       </div>
-    </div>
-  )
-}
+    </nav>
+  );
+};
 
-export default Navbar
+export default Navbar;
