@@ -190,10 +190,10 @@ const bookAppointment = async (req, res) => {
         const newAppointment = new appointmentModel(appointmentData);
         await newAppointment.save();
 
-        // ✅ Update doctor slots
-        await doctorModel.findByIdAndUpdate(docId, { slots_booked });
+        // save new slots data in docData
+        await doctorModel.findByIdAndUpdate(docId, { slots_booked })
 
-        res.json({ success: true, message: "Appointment Booked" });
+        res.json({ success: true, message: 'Appointment Booked' })
 
     } catch (error) {
         console.log(error);
