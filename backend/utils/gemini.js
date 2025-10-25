@@ -1,21 +1,24 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import dotenv from "dotenv";
-dotenv.config();
+import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    // const models = await genAI.listModels();
-    // console.log(models);
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
 export const generateAIResponse = async (prompt) => {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" }); 
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+    });
 
+    // Extract the text safely
+    const explanationText =
+      response?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    const result = await model.generateContent(prompt);
-    const response = result.response.text();
-    return response;
+    if (explanationText) return explanationText;
+    return "⚠️ Sorry, AI couldn't generate a response right now.";
   } catch (error) {
     console.error("Gemini error:", error);
-    throw new Error("AI generation failed");
+    return "⚠️ Sorry, AI couldn't generate a response right now.";
   }
 };
