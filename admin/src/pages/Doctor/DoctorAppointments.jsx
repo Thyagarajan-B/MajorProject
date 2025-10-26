@@ -25,11 +25,14 @@ const DoctorAppointments = () => {
     if (dToken) getAppointments();
   }, [dToken]);
 
-  // ✅ Add/Edit Prescription (text only)
   const handlePrescriptionSubmit = async (appointment, entryIndex = null) => {
     try {
       if (!appointment?._id) {
         toast.error("Appointment data missing!");
+        return;
+      }
+      if (!tempText.trim()) {
+        toast.warning("Please write a prescription before saving!");
         return;
       }
 
@@ -64,6 +67,7 @@ const DoctorAppointments = () => {
       toast.error("Error saving prescription");
     }
   };
+
 
   return (
     <section className="w-full max-w-6xl mx-auto my-8 px-4 sm:px-6 lg:px-8">
@@ -110,7 +114,6 @@ const DoctorAppointments = () => {
                     <p className="font-semibold text-gray-900">
                       {item.userData?.name || "N/A"}
                     </p>
-                    <p className="text-xs text-gray-400">#{item._id.slice(-6)}</p>
                   </div>
                 </div>
 
@@ -155,9 +158,8 @@ const DoctorAppointments = () => {
                     </>
                   ) : (
                     <span
-                      className={`text-sm font-semibold ${
-                        item.isCompleted ? "text-green-600" : "text-red-500"
-                      }`}
+                      className={`text-sm font-semibold ${item.isCompleted ? "text-green-600" : "text-red-500"
+                        }`}
                     >
                       {item.isCompleted ? "✅ Completed" : "❌ Cancelled"}
                     </span>
@@ -186,11 +188,11 @@ const DoctorAppointments = () => {
                         <p className="text-xs text-gray-400 italic">
                           {entry.isEdited
                             ? `✏️ Edited on ${new Date(
-                                entry.updatedAt
-                              ).toLocaleString()}`
+                              entry.updatedAt
+                            ).toLocaleString()}`
                             : `🕒 Added on ${new Date(
-                                entry.createdAt
-                              ).toLocaleString()}`}
+                              entry.createdAt
+                            ).toLocaleString()}`}
                         </p>
 
                         {!isInactive && (
