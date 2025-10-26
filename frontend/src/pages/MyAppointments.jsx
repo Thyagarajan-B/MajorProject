@@ -6,7 +6,6 @@ import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-// Convert image to Base64
 const toBase64 = (file, callback) => {
   const reader = new FileReader();
   reader.onload = (e) => callback(e.target.result);
@@ -24,17 +23,13 @@ const MyAppointments = () => {
   const [loadingAi, setLoadingAi] = useState(false);
   const [logoBase64, setLogoBase64] = useState("");
 
-  // Load logo once
   useEffect(() => {
     fetch("/image.jpg")
       .then((res) => res.blob())
       .then((blob) => toBase64(blob, (res) => setLogoBase64(res)));
   }, []);
 
-  const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
-  ];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   const slotDateFormat = (slotDate) => {
     const dateArray = slotDate.split("_");
@@ -56,6 +51,27 @@ const MyAppointments = () => {
   useEffect(() => {
     if (token) getUserAppointments();
   }, [token]);
+
+  // 🔹 Cancel Appointment Handler
+  const handleCancelAppointment = async (appointmentId) => {
+    try {
+      const { data } = await axios.post(
+        `${backendUrl}/api/user/cancel-appointment`,
+        { appointmentId, userId: userData._id },
+        { headers: { token } }
+      );
+
+      if (data.success) {
+        toast.success("Appointment cancelled successfully");
+        getUserAppointments();
+      } else {
+        toast.error(data.message || "Failed to cancel appointment");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error cancelling appointment");
+    }
+  };
 
   // -------------------- CLEAN PDF DOWNLOAD --------------------
   const handleDownloadPrescription = async (
@@ -83,19 +99,16 @@ const MyAppointments = () => {
         .replace(/\n/g, "<br>");
 
     tempDiv.innerHTML = `
-      <!-- HEADER SECTION -->
       <div style="text-align:center; margin-bottom:24px;">
-        ${
-          logoBase64
-            ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
-            : ""
-        }
+        ${logoBase64
+        ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
+        : ""
+      }
         <h1 style="margin:0; font-size:30px; color:#0A3D62; font-weight:700;">CareBridge</h1>
         <p style="margin:4px 0 0; color:#3C6382; font-size:13px;">Digital E-Prescription Platform</p>
         <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
       </div>
 
-      <!-- DOCTOR & PATIENT INFO -->
       <div style="display:flex; justify-content:space-between; margin-top:18px; background:#EAF0F6; padding:16px 20px; border-radius:10px;">
         <div style="width:48%;">
           <h3 style="margin:0; font-size:15px; color:#0A3D62;">Doctor Information</h3>
@@ -104,7 +117,6 @@ const MyAppointments = () => {
           <p><strong>Date:</strong> ${safe(slotDate)}</p>
           <p><strong>Time:</strong> ${safe(slotTime)}</p>
         </div>
-
         <div style="width:48%;">
           <h3 style="margin:0; font-size:15px; color:#0A3D62;">Patient Information</h3>
           <p><strong>Name:</strong> ${safe(patientData?.name || userData?.name)}</p>
@@ -112,18 +124,17 @@ const MyAppointments = () => {
         </div>
       </div>
 
-      <!-- PRESCRIPTION DETAILS -->
       <div style="margin-top:32px;">
         <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
         <ul style="margin-top:16px; padding-left:20px; list-style-type:disc;">
           ${prescription.entries
-            .map(
-              (entry, idx) => `
+        .map(
+          (entry, idx) => `
               <li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">
                 ${safe(entry.text)}
               </li>`
-            )
-            .join("")}
+        )
+        .join("")}
         </ul>
       </div>
     `;
@@ -162,10 +173,7 @@ const MyAppointments = () => {
 
   const formatSummary = (text) => {
     if (!text) return "No summary available.";
-    const cleaned = text
-      .replace(/[*_#>-]/g, "")
-      .replace(/\n{2,}/g, "\n")
-      .trim();
+    const cleaned = text.replace(/[*_#>-]/g, "").replace(/\n{2,}/g, "\n").trim();
     const points = cleaned
       .split(/\n|\•|\-/)
       .map((p) => p.trim())
@@ -203,6 +211,23 @@ const MyAppointments = () => {
               {slotDateFormat(item.slotDate)} | {item.slotTime}
             </p>
 
+            {/* 🔹 Action Buttons */}
+            <div className="mt-3 flex gap-3 items-center">
+              {item.cancelled ? (
+                <span className="text-red-500 font-semibold text-sm">❌ Cancelled</span>
+              ) : item.isCompleted ? (
+                <span className="text-green-600 font-semibold text-sm">✅ Completed</span>
+              ) : (
+                <button
+                  onClick={() => handleCancelAppointment(item._id)}
+                  className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs"
+                >
+                  Cancel Appointment
+                </button>
+              )}
+            </div>
+
+            {/* Prescription Section */}
             {item.prescription?.entries?.length > 0 && (
               <div className="mt-3 bg-gray-50 p-3 rounded border">
                 <p className="font-semibold text-sm text-gray-700 mb-2">
@@ -272,7 +297,9 @@ const MyAppointments = () => {
               AI Prescription Summary
             </h3>
             {loadingAi ? (
-              <p className="text-center text-gray-500">🧠 Analyzing prescription...</p>
+              <p className="text-center text-gray-500">
+                🧠 Analyzing prescription...
+              </p>
             ) : (
               <div
                 className="text-gray-700 text-sm"
