@@ -12,7 +12,7 @@ doctorRouter.post("/complete-appointment", authDoctor, appointmentComplete)
 doctorRouter.get("/dashboard", authDoctor, doctorDashboard)
 doctorRouter.get("/profile", authDoctor, doctorProfile)
 doctorRouter.post("/add-prescription", authDoctor, addPrescription)
-doctorRouter.post("/edit-prescription", authDoctor, editPrescription)
+doctorRouter.post("/edit-prescription", authDoctor,editPrescription)
 doctorRouter.post("/update-profile", authDoctor, updateDoctorProfile)
 doctorRouter.delete("/delete-doctor/:id", deleteDoctor);
 
