@@ -6,431 +6,290 @@ import { toast } from "react-toastify";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-import { assets } from "../assets/assets";
+// Convert image to Base64
+const toBase64 = (file, callback) => {
+  const reader = new FileReader();
+  reader.onload = (e) => callback(e.target.result);
+  reader.readAsDataURL(file);
+};
 
 const MyAppointments = () => {
-    const { backendUrl, token } = useContext(AppContext);
-    const navigate = useNavigate();
+  const { backendUrl, token, userData } = useContext(AppContext);
+  const navigate = useNavigate();
 
-    const [appointments, setAppointments] = useState([]);
-    const [payment, setPayment] = useState("");
-    const [selectedPrescription, setSelectedPrescription] = useState(null);
-    const [aiSummary, setAiSummary] = useState("");
-    const [showAiModal, setShowAiModal] = useState(false);
-    const [loadingAi, setLoadingAi] = useState(false);
+  const [appointments, setAppointments] = useState([]);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [aiSummary, setAiSummary] = useState("");
+  const [showAiModal, setShowAiModal] = useState(false);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [logoBase64, setLogoBase64] = useState("");
 
-    const months = [
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ];
+  // Load logo once
+  useEffect(() => {
+    fetch("/image.jpg")
+      .then((res) => res.blob())
+      .then((blob) => toBase64(blob, (res) => setLogoBase64(res)));
+  }, []);
 
-    const slotDateFormat = (slotDate) => {
-        const dateArray = slotDate.split("_");
-        return `${dateArray[0]} ${months[Number(dateArray[1])]} ${dateArray[2]}`;
-    };
+  const months = [
+    "Jan","Feb","Mar","Apr","May","Jun",
+    "Jul","Aug","Sep","Oct","Nov","Dec"
+  ];
 
-    const getUserAppointments = async () => {
-        try {
-            const { data } = await axios.get(`${backendUrl}/api/user/appointments`, {
-                headers: { token },
-            });
-            setAppointments(data.appointments.reverse());
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
+  const slotDateFormat = (slotDate) => {
+    const dateArray = slotDate.split("_");
+    return `${dateArray[0]} ${months[Number(dateArray[1])] || dateArray[1]} ${dateArray[2]}`;
+  };
+
+  const getUserAppointments = async () => {
+    try {
+      const { data } = await axios.get(`${backendUrl}/api/user/appointments`, {
+        headers: { token },
+      });
+      setAppointments(data.appointments.reverse());
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to fetch appointments");
+    }
+  };
+
+  useEffect(() => {
+    if (token) getUserAppointments();
+  }, [token]);
+
+  // -------------------- CLEAN PDF DOWNLOAD --------------------
+  const handleDownloadPrescription = async (
+    prescription,
+    doctorName,
+    slotDate,
+    slotTime,
+    patientData = {}
+  ) => {
+    const tempDiv = document.createElement("div");
+    tempDiv.style.width = "700px";
+    tempDiv.style.padding = "20px 40px 40px";
+    tempDiv.style.fontFamily = "'Segoe UI', Helvetica, Arial, sans-serif";
+    tempDiv.style.backgroundColor = "#ffffff";
+    tempDiv.style.color = "#1a1a1a";
+    tempDiv.style.border = "1px solid #dbe3ec";
+    tempDiv.style.borderRadius = "16px";
+    tempDiv.style.lineHeight = "1.6";
+    tempDiv.style.boxShadow = "0 4px 20px rgba(0,0,0,0.08)";
+
+    const safe = (text) =>
+      (text || "-")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\n/g, "<br>");
+
+    tempDiv.innerHTML = `
+      <!-- HEADER SECTION -->
+      <div style="text-align:center; margin-bottom:24px;">
+        ${
+          logoBase64
+            ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
+            : ""
         }
-    };
+        <h1 style="margin:0; font-size:30px; color:#0A3D62; font-weight:700;">CareBridge</h1>
+        <p style="margin:4px 0 0; color:#3C6382; font-size:13px;">Digital E-Prescription Platform</p>
+        <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
+      </div>
 
-    const cancelAppointment = async (appointmentId) => {
-        try {
-            const { data } = await axios.post(
-                `${backendUrl}/api/user/cancel-appointment`,
-                { appointmentId },
-                { headers: { token } }
-            );
-            if (data.success) {
-                toast.success(data.message);
-                getUserAppointments();
-            } else {
-                toast.error(data.message);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
-        }
-    };
+      <!-- DOCTOR & PATIENT INFO -->
+      <div style="display:flex; justify-content:space-between; margin-top:18px; background:#EAF0F6; padding:16px 20px; border-radius:10px;">
+        <div style="width:48%;">
+          <h3 style="margin:0; font-size:15px; color:#0A3D62;">Doctor Information</h3>
+          <p><strong>Name:</strong> ${safe(doctorName)}</p>
+          <p><strong>Speciality:</strong> ${safe(prescription.speciality || "General Physician")}</p>
+          <p><strong>Date:</strong> ${safe(slotDate)}</p>
+          <p><strong>Time:</strong> ${safe(slotTime)}</p>
+        </div>
 
-    const initPay = (order) => {
-        const options = {
-            key: import.meta.env.VITE_RAZORPAY_KEY_ID,
-            amount: order.amount,
-            currency: order.currency,
-            name: "Appointment Payment",
-            description: "Appointment Payment",
-            order_id: order.id,
-            receipt: order.receipt,
-            handler: async (response) => {
-                try {
-                    const { data } = await axios.post(
-                        `${backendUrl}/api/user/verifyRazorpay`,
-                        response,
-                        { headers: { token } }
-                    );
-                    if (data.success) {
-                        navigate("/my-appointments");
-                        getUserAppointments();
-                    }
-                } catch (error) {
-                    console.log(error);
-                    toast.error(error.message);
-                }
-            },
-        };
-        const rzp = new window.Razorpay(options);
-        rzp.open();
-    };
+        <div style="width:48%;">
+          <h3 style="margin:0; font-size:15px; color:#0A3D62;">Patient Information</h3>
+          <p><strong>Name:</strong> ${safe(patientData?.name || userData?.name)}</p>
+          <p><strong>Age / Gender:</strong> ${safe(patientData?.age || userData?.age)} / ${safe(patientData?.gender || userData?.gender)}</p>
+        </div>
+      </div>
 
-    const appointmentRazorpay = async (appointmentId) => {
-        try {
-            const { data } = await axios.post(
-                `${backendUrl}/api/user/payment-razorpay`,
-                { appointmentId },
-                { headers: { token } }
-            );
-            if (data.success) {
-                initPay(data.order);
-            } else {
-                toast.error(data.message);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
-        }
-    };
+      <!-- PRESCRIPTION DETAILS -->
+      <div style="margin-top:32px;">
+        <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
+        <ul style="margin-top:16px; padding-left:20px; list-style-type:disc;">
+          ${prescription.entries
+            .map(
+              (entry, idx) => `
+              <li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">
+                ${safe(entry.text)}
+              </li>`
+            )
+            .join("")}
+        </ul>
+      </div>
+    `;
 
-    const appointmentStripe = async (appointmentId) => {
-        try {
-            const { data } = await axios.post(
-                `${backendUrl}/api/user/payment-stripe`,
-                { appointmentId },
-                { headers: { token } }
-            );
-            if (data.success) {
-                const { session_url } = data;
-                window.location.replace(session_url);
-            } else {
-                toast.error(data.message);
-            }
-        } catch (error) {
-            console.log(error);
-            toast.error(error.message);
-        }
-    };
+    document.body.appendChild(tempDiv);
+    const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF("p", "pt", "a4");
+    const imgWidth = 595;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+    pdf.save(
+      `Prescription_${doctorName.replace(/\s/g, "_")}_${slotDate.replace(/ /g, "_")}.pdf`
+    );
+    document.body.removeChild(tempDiv);
+  };
+  // -----------------------------------------------------------------
 
-    useEffect(() => {
-        if (token) {
-            getUserAppointments();
-        }
-    }, [token]);
+  const handleAISummary = async (prescription) => {
+    try {
+      setLoadingAi(true);
+      setShowAiModal(true);
+      const fullText = prescription.entries.map((e) => e.text).join("\n\n");
+      const { data } = await axios.post(`${backendUrl}/api/ai/explain-prescription`, {
+        prescriptionText: fullText,
+      });
+      const explanation = data.explanation || "No summary generated.";
+      setAiSummary(formatSummary(explanation));
+    } catch (error) {
+      console.log(error);
+      toast.error("Failed to generate AI summary");
+    } finally {
+      setLoadingAi(false);
+    }
+  };
 
-    const handleDownloadPrescription = async (prescription, doctorName, slotDate, slotTime) => {
-        const pdf = new jsPDF("p", "pt", "a4");
+  const formatSummary = (text) => {
+    if (!text) return "No summary available.";
+    const cleaned = text
+      .replace(/[*_#>-]/g, "")
+      .replace(/\n{2,}/g, "\n")
+      .trim();
+    const points = cleaned
+      .split(/\n|\•|\-/)
+      .map((p) => p.trim())
+      .filter(Boolean);
+    return `
+      <ul class="list-disc pl-4 space-y-1 text-sm text-gray-700">
+        ${points.map((p) => `<li>${p}</li>`).join("")}
+      </ul>
+    `;
+  };
 
-        // Create a hidden div for rendering
-        const tempDiv = document.createElement("div");
-        tempDiv.style.padding = "20px";
-        tempDiv.style.width = "500px";
-        tempDiv.innerHTML = `
-    <h2 style="text-align:center;">Prescription</h2>
-    <p><strong>Doctor:</strong> ${doctorName}</p>
-    <p><strong>Date:</strong> ${slotDate} | ${slotTime}</p>
-    <hr style="margin:10px 0;"/>
-    ${prescription.entries
-                .map(
-                    (entry, idx) => `
-        <div style="margin-bottom:15px;">
-          <h4>Entry ${idx + 1}</h4>
-          <p>${entry.text || "No text provided"}</p>
-          ${entry.images && entry.images.length > 0
-                            ? entry.images
-                                .map(
-                                    (img) =>
-                                        `<img src="${img}" style="width:100px;height:100px;object-fit:cover;margin-right:5px;"/>`
-                                )
-                                .join("")
-                            : ""
-                        }
-          <p style="font-size:11px;color:gray;">
-            ${entry.isEdited ? "Edited" : "Added"}: ${new Date(
-                            entry.isEdited ? entry.updatedAt : entry.createdAt
-                        ).toLocaleString()}
-          </p>
-        </div>`
-                )
-                .join("")}
-  `;
-        document.body.appendChild(tempDiv);
+  return (
+    <div>
+      <p className="pb-3 mt-12 text-lg font-medium text-gray-600 border-b">
+        My Appointments
+      </p>
 
-        const canvas = await html2canvas(tempDiv);
-        const imgData = canvas.toDataURL("image/png");
-        const imgWidth = 595; // A4 width
-        const pageHeight = 842;
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        while (heightLeft >= 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-        }
-
-        pdf.save(`Prescription_${doctorName.replace(/\s/g, "_")}.pdf`);
-        document.body.removeChild(tempDiv);
-    };
-
-    // ✅ AI Summary Function
-    const handleAISummary = async (prescription) => {
-        try {
-            setLoadingAi(true);
-            setShowAiModal(true);
-            const fullText = prescription.entries.map((e) => e.text).join("\n\n");
-            const { data } = await axios.post(
-                `${backendUrl}/api/ai/explain-prescription`,
-                { prescriptionText: fullText }
-            );
-            setAiSummary(data.explanation);
-        } catch (error) {
-            console.log(error);
-            toast.error("AI summary failed");
-        } finally {
-            setLoadingAi(false);
-        }
-    };
-
-    return (
-        <div>
-            <p className="pb-3 mt-12 text-lg font-medium text-gray-600 border-b">
-                My Appointments
+      {appointments.map((item, index) => (
+        <div
+          key={index}
+          className="grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b"
+        >
+          <img
+            className="w-36 bg-[#EAEFFF] rounded"
+            src={item.docData.image}
+            alt="doctor"
+          />
+          <div className="flex-1 text-sm text-[#5E5E5E]">
+            <p className="text-[#262626] text-base font-semibold">
+              {item.docData.name}
+            </p>
+            <p>{item.docData.speciality}</p>
+            <p className="mt-1">
+              <span className="font-medium text-[#3C3C3C]">Date & Time:</span>{" "}
+              {slotDateFormat(item.slotDate)} | {item.slotTime}
             </p>
 
-            <div>
-                {appointments.map((item, index) => (
-                    <div
-                        key={index}
-                        className="grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b"
-                    >
-                        {/* Doctor Image */}
-                        <div>
-                            <img
-                                className="w-36 bg-[#EAEFFF] rounded"
-                                src={item.docData.image}
-                                alt="doctor"
-                            />
-                        </div>
-
-                        {/* Appointment Info */}
-                        <div className="flex-1 text-sm text-[#5E5E5E]">
-                            <p className="text-[#262626] text-base font-semibold">
-                                {item.docData.name}
-                            </p>
-                            <p>{item.docData.speciality}</p>
-                            <p className="text-[#464646] font-medium mt-1">Address:</p>
-                            <p>{item.docData.address.line1}</p>
-                            <p>{item.docData.address.line2}</p>
-
-                            <p className="mt-1">
-                                <span className="text-sm text-[#3C3C3C] font-medium">
-                                    Date & Time:
-                                </span>{" "}
-                                {slotDateFormat(item.slotDate)} | {item.slotTime}
-                            </p>
-
-                            {/* ✅ Prescription Section */}
-                            {item.prescription?.entries?.length > 0 && (
-                                <div className="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
-                                    <p className="font-semibold text-sm text-gray-700 mb-2">Prescription</p>
-
-                                    <div className="flex gap-3 mb-2">
-                                        <button
-                                            onClick={() => setSelectedPrescription(item.prescription)}
-                                            className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
-                                        >
-                                            View
-                                        </button>
-
-                                        <button
-                                            onClick={() =>
-                                                handleDownloadPrescription(
-                                                    item.prescription,
-                                                    item.docData.name,
-                                                    slotDateFormat(item.slotDate),
-                                                    item.slotTime
-                                                )
-                                            }
-                                            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                                        >
-                                            Download
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Actions Section */}
-                        <div className="flex flex-col gap-2 justify-end text-sm text-center">
-                            {!item.cancelled &&
-                                !item.payment &&
-                                !item.isCompleted &&
-                                payment !== item._id && (
-                                    <button
-                                        onClick={() => setPayment(item._id)}
-                                        className="text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-primary hover:text-white transition-all duration-300"
-                                    >
-                                        Pay Online
-                                    </button>
-                                )}
-
-                            {!item.cancelled &&
-                                !item.payment &&
-                                !item.isCompleted &&
-                                payment === item._id && (
-                                    <>
-                                        <button
-                                            onClick={() => appointmentStripe(item._id)}
-                                            className="text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 flex items-center justify-center"
-                                        >
-                                            <img
-                                                className="max-w-20 max-h-5"
-                                                src={assets.stripe_logo}
-                                                alt=""
-                                            />
-                                        </button>
-
-                                        <button
-                                            onClick={() => appointmentRazorpay(item._id)}
-                                            className="text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-gray-100 flex items-center justify-center"
-                                        >
-                                            <img
-                                                className="max-w-20 max-h-5"
-                                                src={assets.razorpay_logo}
-                                                alt=""
-                                            />
-                                        </button>
-                                    </>
-                                )}
-
-                            {!item.cancelled && item.payment && !item.isCompleted && (
-                                <button className="sm:min-w-48 py-2 border rounded text-[#696969] bg-[#EAEFFF]">
-                                    Paid
-                                </button>
-                            )}
-
-                            {item.isCompleted && (
-                                <button className="sm:min-w-48 py-2 border border-green-500 rounded text-green-500">
-                                    Completed
-                                </button>
-                            )}
-
-                            {!item.cancelled && !item.isCompleted && (
-                                <button
-                                    onClick={() => cancelAppointment(item._id)}
-                                    className="text-[#696969] sm:min-w-48 py-2 border rounded hover:bg-red-600 hover:text-white transition-all duration-300"
-                                >
-                                    Cancel Appointment
-                                </button>
-                            )}
-
-                            {item.cancelled && !item.isCompleted && (
-                                <button className="sm:min-w-48 py-2 border border-red-500 rounded text-red-500">
-                                    Appointment Cancelled
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                ))}
-            </div>
-
-            {/* Modal for Viewing Prescription */}
-            {selectedPrescription && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-                    <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[500px] max-h-[80vh] overflow-y-auto">
-                        <h3 className="text-lg font-semibold mb-2 text-gray-800 text-center">Prescription</h3>
-
-                        {selectedPrescription.entries.map((entry, idx) => (
-                            <div key={idx} className="border rounded p-3 mb-3">
-                                <p className="text-sm text-gray-600 whitespace-pre-wrap mb-2">
-                                    {entry.text || "No text provided"}
-                                </p>
-
-                                {entry.images?.length > 0 && (
-                                    <div className="flex gap-2 flex-wrap">
-                                        {entry.images.map((img, i) => (
-                                            <img
-                                                key={i}
-                                                src={img}
-                                                className="w-24 h-24 object-cover rounded border"
-                                                alt="prescription"
-                                            />
-                                        ))}
-                                    </div>
-                                )}
-
-                                <p className="text-xs text-gray-400 mt-2">
-                                    {entry.isEdited
-                                        ? `Edited on ${new Date(entry.updatedAt).toLocaleString()}`
-                                        : `Added on ${new Date(entry.createdAt).toLocaleString()}`}
-                                </p>
-                            </div>
-                        ))}
-
-                        {/* ✅ New AI Summary Button */}
-                        <button
-                            onClick={() => handleAISummary(selectedPrescription)}
-                            className="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
-                        >
-                            Generate AI Summary
-                        </button>
-
-                        <button
-                            onClick={() => setSelectedPrescription(null)}
-                            className="mt-2 bg-primary text-white px-3 py-1 rounded text-sm w-full"
-                        >
-                            Close
-                        </button>
-                    </div>
+            {item.prescription?.entries?.length > 0 && (
+              <div className="mt-3 bg-gray-50 p-3 rounded border">
+                <p className="font-semibold text-sm text-gray-700 mb-2">
+                  Prescription
+                </p>
+                <div className="flex gap-3 mb-2">
+                  <button
+                    onClick={() => setSelectedPrescription(item.prescription)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleDownloadPrescription(
+                        item.prescription,
+                        item.docData.name,
+                        slotDateFormat(item.slotDate),
+                        item.slotTime,
+                        item.patientData || userData
+                      )
+                    }
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
+                  >
+                    Download
+                  </button>
                 </div>
+              </div>
             )}
-
-            {/* ✅ AI Summary Modal */}
-            {showAiModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-                    <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[450px] max-h-[70vh] overflow-y-auto">
-                        <h3 className="text-lg font-semibold mb-3 text-center text-purple-700">
-                            AI Prescription Summary
-                        </h3>
-
-                        {loadingAi ? (
-                            <p className="text-center text-gray-500">🧠 Generating summary...</p>
-                        ) : (
-                            <p className="text-gray-700 whitespace-pre-wrap">{aiSummary}</p>
-                        )}
-
-                        <button
-                            onClick={() => setShowAiModal(false)}
-                            className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
+          </div>
         </div>
-    );
+      ))}
+
+      {/* Prescription Modal */}
+      {selectedPrescription && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[500px] max-h-[80vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-3 text-gray-800 text-center">
+              Prescription
+            </h3>
+            <ul className="list-disc pl-4 space-y-2 text-sm text-gray-600">
+              {selectedPrescription.entries.map((entry, idx) => (
+                <li key={idx}>{entry.text || "No details provided"}</li>
+              ))}
+            </ul>
+            <button
+              onClick={() => handleAISummary(selectedPrescription)}
+              className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
+            >
+              Generate AI Summary
+            </button>
+            <button
+              onClick={() => setSelectedPrescription(null)}
+              className="mt-2 bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded text-sm w-full"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* AI Summary Modal */}
+      {showAiModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+          <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[450px] max-h-[70vh] overflow-y-auto shadow-lg">
+            <h3 className="text-lg font-semibold mb-3 text-center text-purple-700">
+              AI Prescription Summary
+            </h3>
+            {loadingAi ? (
+              <p className="text-center text-gray-500">🧠 Analyzing prescription...</p>
+            ) : (
+              <div
+                className="text-gray-700 text-sm"
+                dangerouslySetInnerHTML={{ __html: aiSummary }}
+              />
+            )}
+            <button
+              onClick={() => setShowAiModal(false)}
+              className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default MyAppointments;
