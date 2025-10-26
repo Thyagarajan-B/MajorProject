@@ -32,8 +32,8 @@ const MyAppointments = () => {
   }, []);
 
   const months = [
-    "Jan","Feb","Mar","Apr","May","Jun",
-    "Jul","Aug","Sep","Oct","Nov","Dec"
+    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
   ];
 
   const slotDateFormat = (slotDate) => {
@@ -57,7 +57,30 @@ const MyAppointments = () => {
     if (token) getUserAppointments();
   }, [token]);
 
-  // -------------------- CLEAN PDF DOWNLOAD --------------------
+  // Cancel appointment (only when no prescription)
+  const handleCancelAppointment = async (appointmentId) => {
+    const confirmCancel = window.confirm("Are you sure you want to cancel this appointment?");
+    if (!confirmCancel) return;
+
+    try {
+      const { data } = await axios.delete(
+        `${backendUrl}/api/user/cancel-appointment/${appointmentId}`,
+        { headers: { token } }
+      );
+
+      if (data.success) {
+        toast.success("Appointment cancelled successfully!");
+        getUserAppointments();
+      } else {
+        toast.error(data.message || "Failed to cancel appointment");
+      }
+    } catch (error) {
+      console.error(error);
+      toast.error("Error cancelling appointment");
+    }
+  };
+
+  // PDF generation
   const handleDownloadPrescription = async (
     prescription,
     doctorName,
@@ -83,7 +106,6 @@ const MyAppointments = () => {
         .replace(/\n/g, "<br>");
 
     tempDiv.innerHTML = `
-      <!-- HEADER SECTION -->
       <div style="text-align:center; margin-bottom:24px;">
         ${
           logoBase64
@@ -95,7 +117,6 @@ const MyAppointments = () => {
         <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
       </div>
 
-      <!-- DOCTOR & PATIENT INFO -->
       <div style="display:flex; justify-content:space-between; margin-top:18px; background:#EAF0F6; padding:16px 20px; border-radius:10px;">
         <div style="width:48%;">
           <h3 style="margin:0; font-size:15px; color:#0A3D62;">Doctor Information</h3>
@@ -112,16 +133,12 @@ const MyAppointments = () => {
         </div>
       </div>
 
-      <!-- PRESCRIPTION DETAILS -->
       <div style="margin-top:32px;">
         <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
         <ul style="margin-top:16px; padding-left:20px; list-style-type:disc;">
           ${prescription.entries
             .map(
-              (entry, idx) => `
-              <li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">
-                ${safe(entry.text)}
-              </li>`
+              (entry) => `<li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">${safe(entry.text)}</li>`
             )
             .join("")}
         </ul>
@@ -140,7 +157,6 @@ const MyAppointments = () => {
     );
     document.body.removeChild(tempDiv);
   };
-  // -----------------------------------------------------------------
 
   const handleAISummary = async (prescription) => {
     try {
@@ -183,58 +199,77 @@ const MyAppointments = () => {
         My Appointments
       </p>
 
-      {appointments.map((item, index) => (
-        <div
-          key={index}
-          className="grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b"
-        >
-          <img
-            className="w-36 bg-[#EAEFFF] rounded"
-            src={item.docData.image}
-            alt="doctor"
-          />
-          <div className="flex-1 text-sm text-[#5E5E5E]">
-            <p className="text-[#262626] text-base font-semibold">
-              {item.docData.name}
-            </p>
-            <p>{item.docData.speciality}</p>
-            <p className="mt-1">
-              <span className="font-medium text-[#3C3C3C]">Date & Time:</span>{" "}
-              {slotDateFormat(item.slotDate)} | {item.slotTime}
-            </p>
+      {appointments.map((item, index) => {
+        const isCompleted = item.prescription?.entries?.length > 0;
 
-            {item.prescription?.entries?.length > 0 && (
-              <div className="mt-3 bg-gray-50 p-3 rounded border">
-                <p className="font-semibold text-sm text-gray-700 mb-2">
-                  Prescription
-                </p>
-                <div className="flex gap-3 mb-2">
+        return (
+          <div
+            key={index}
+            className="relative grid grid-cols-[1fr_2fr] gap-4 sm:flex sm:gap-6 py-4 border-b"
+          >
+            <img
+              className="w-36 bg-[#EAEFFF] rounded"
+              src={item.docData.image}
+              alt="doctor"
+            />
+            <div className="flex-1 text-sm text-[#5E5E5E] relative">
+              <p className="text-[#262626] text-base font-semibold">
+                {item.docData.name}
+              </p>
+              <p>{item.docData.speciality}</p>
+              <p className="mt-1">
+                <span className="font-medium text-[#3C3C3C]">Date & Time:</span>{" "}
+                {slotDateFormat(item.slotDate)} | {item.slotTime}
+              </p>
+
+              {isCompleted ? (
+                <div className="mt-3 bg-gray-50 p-3 rounded border">
+                  <p className="font-semibold text-sm text-gray-700 mb-2">
+                    Prescription
+                  </p>
+                  <div className="flex gap-3 mb-2">
+                    <button
+                      onClick={() => setSelectedPrescription(item.prescription)}
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleDownloadPrescription(
+                          item.prescription,
+                          item.docData.name,
+                          slotDateFormat(item.slotDate),
+                          item.slotTime,
+                          item.patientData || userData
+                        )
+                      }
+                      className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
+                    >
+                      Download
+                    </button>
+                  </div>
+
+                  {/* Completed Label */}
+                  <p className="text-green-600 font-medium text-sm mt-1">
+                    ✔ Appointment Completed
+                  </p>
+                </div>
+              ) : (
+                // Cancel Button only if not completed
+                <div className="absolute bottom-2 right-2">
                   <button
-                    onClick={() => setSelectedPrescription(item.prescription)}
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs"
+                    onClick={() => handleCancelAppointment(item._id)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded-md text-xs"
                   >
-                    View
-                  </button>
-                  <button
-                    onClick={() =>
-                      handleDownloadPrescription(
-                        item.prescription,
-                        item.docData.name,
-                        slotDateFormat(item.slotDate),
-                        item.slotTime,
-                        item.patientData || userData
-                      )
-                    }
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs"
-                  >
-                    Download
+                    Cancel Appointment
                   </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Prescription Modal */}
       {selectedPrescription && (

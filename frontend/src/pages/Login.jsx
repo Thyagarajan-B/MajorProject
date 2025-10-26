@@ -1,4 +1,4 @@
-import  { useContext, useEffect, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { AppContext } from '../context/AppContext'
 import axios from 'axios'
 import { toast } from 'react-toastify'
@@ -14,49 +14,47 @@ const Login = () => {
   const { backendUrl, token, setToken } = useContext(AppContext)
 
   const onSubmitHandler = async (event) => {
-    event.preventDefault();
+    event.preventDefault()
 
     try {
       if (state === 'Sign Up') {
         // ✅ Register user
-        const { data } = await axios.post(backendUrl + '/api/user/register', { name, email, password })
+        const { data } = await axios.post(`${backendUrl}/api/user/register`, {
+          name,
+          email,
+          password,
+        })
 
         if (data.success) {
-          toast.success("Account created successfully! Please login.")
-
-          // ✅ Clear fields
+          toast.success('Account created successfully! Please login.')
           setName('')
           setEmail('')
           setPassword('')
-
-          // ✅ Switch to login
           setState('Login')
-          navigate("/login")
+          navigate('/login')
         } else {
           toast.error(data.message)
         }
       } else {
         // ✅ Login user
-        const { data } = await axios.post(backendUrl + '/api/user/login', { email, password })
+        const { data } = await axios.post(`${backendUrl}/api/user/login`, {
+          email,
+          password,
+        })
 
         if (data.success) {
           localStorage.setItem('token', data.token)
           setToken(data.token)
-          toast.success("Login successful!")
-          navigate("/")  // redirect to home
+          toast.success('Login successful!')
+          navigate('/')
         } else {
           toast.error(data.message)
         }
       }
     } catch (error) {
       console.error(error)
-      toast.error("Something went wrong. Try again.")
+      toast.error('Something went wrong. Try again.')
     }
-  }
-
-  // ✅ Google login handler
-  const handleGoogleLogin = () => {
-    window.location.href = backendUrl + "/api/user/google"
   }
 
   // ✅ Redirect if already logged in
@@ -69,11 +67,12 @@ const Login = () => {
   return (
     <form onSubmit={onSubmitHandler} className='min-h-[80vh] flex items-center'>
       <div className='flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-[#5E5E5E] text-sm shadow-lg'>
-
         <p className='text-2xl font-semibold'>
           {state === 'Sign Up' ? 'Create Account' : 'Login'}
         </p>
-        <p>Please {state === 'Sign Up' ? 'sign up' : 'log in'} to book appointment</p>
+        <p>
+          Please {state === 'Sign Up' ? 'sign up' : 'log in'} to book an appointment
+        </p>
 
         {state === 'Sign Up' && (
           <div className='w-full'>
@@ -82,7 +81,7 @@ const Login = () => {
               onChange={(e) => setName(e.target.value)}
               value={name}
               className='border border-[#DADADA] rounded w-full p-2 mt-1'
-              type="text"
+              type='text'
               required
             />
           </div>
@@ -94,7 +93,7 @@ const Login = () => {
             onChange={(e) => setEmail(e.target.value)}
             value={email}
             className='border border-[#DADADA] rounded w-full p-2 mt-1'
-            type="email"
+            type='email'
             required
           />
         </div>
@@ -105,7 +104,7 @@ const Login = () => {
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             className='border border-[#DADADA] rounded w-full p-2 mt-1'
-            type="password"
+            type='password'
             required
           />
         </div>
@@ -114,28 +113,36 @@ const Login = () => {
           {state === 'Sign Up' ? 'Create account' : 'Login'}
         </button>
 
-        {/* ✅ Google Login Button */}
+        {/* ✅ Admin Login Redirect */}
         <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className='bg-red-500 text-white w-full py-2 my-2 rounded-md text-base'
-        >
-          Continue with Google
-        </button>
-
-        {/* Admin Login Redirect */}
-        <button
-          type="button"
-          onClick={() => window.location.href = "http://localhost:5174/"}
+          type='button'
+          onClick={() => (window.location.href = 'http://localhost:5174/')}
           className='bg-green-600 text-white w-full py-2 my-2 rounded-md text-base'
         >
           Admin Login
         </button>
 
-        {state === 'Sign Up'
-          ? <p>Already have an account? <span onClick={() => setState('Login')} className='text-primary underline cursor-pointer'>Login here</span></p>
-          : <p>Create a new account? <span onClick={() => setState('Sign Up')} className='text-primary underline cursor-pointer'>Click here</span></p>
-        }
+        {state === 'Sign Up' ? (
+          <p>
+            Already have an account?{' '}
+            <span
+              onClick={() => setState('Login')}
+              className='text-primary underline cursor-pointer'
+            >
+              Login here
+            </span>
+          </p>
+        ) : (
+          <p>
+            Create a new account?{' '}
+            <span
+              onClick={() => setState('Sign Up')}
+              className='text-primary underline cursor-pointer'
+            >
+              Click here
+            </span>
+          </p>
+        )}
       </div>
     </form>
   )
