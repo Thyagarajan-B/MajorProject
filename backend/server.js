@@ -19,7 +19,7 @@ connectCloudinary()
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")))
+// app.use("/uploads", express.static(path.join(process.cwd(), "uploads")))
 
 // api endpoints
 app.use("/api/user", userRouter)
