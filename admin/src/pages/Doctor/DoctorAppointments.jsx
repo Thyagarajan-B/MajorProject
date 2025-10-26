@@ -1,57 +1,67 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { DoctorContext } from '../../context/DoctorContext';
-import { AppContext } from '../../context/AppContext';
-import { assets } from '../../assets/assets';
-import axios from 'axios';
-import { toast } from 'react-toastify';
+import React, { useContext, useEffect, useState } from "react";
+import { DoctorContext } from "../../context/DoctorContext";
+import { AppContext } from "../../context/AppContext";
+import { assets } from "../../assets/assets";
+import axios from "axios";
+import { toast } from "react-toastify";
 
 const DoctorAppointments = () => {
-  const { dToken, appointments, getAppointments, cancelAppointment, completeAppointment, backendUrl } =
-    useContext(DoctorContext);
+  const {
+    dToken,
+    appointments,
+    getAppointments,
+    cancelAppointment,
+    completeAppointment,
+    backendUrl,
+  } = useContext(DoctorContext);
+
   const { slotDateFormat, currency } = useContext(AppContext);
 
   const [activePrescription, setActivePrescription] = useState(null);
-  const [tempText, setTempText] = useState('');
-  const [tempImages, setTempImages] = useState([]);
+  const [tempText, setTempText] = useState("");
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     if (dToken) getAppointments();
   }, [dToken]);
 
-  // ✅ Add/Edit Prescription
+  // ✅ Add/Edit Prescription (text only)
   const handlePrescriptionSubmit = async (appointment, entryIndex = null) => {
     try {
       if (!appointment?._id) {
-        toast.error('Appointment data missing!');
+        toast.error("Appointment data missing!");
         return;
       }
 
-      const endpoint = editMode ? 'edit-prescription' : 'add-prescription';
-      const formData = new FormData();
-      formData.append('appointmentId', appointment._id);
-      formData.append('docId', appointment.docId);
-      formData.append('text', tempText);
-      if (entryIndex !== null) formData.append('entryIndex', entryIndex);
-      tempImages.forEach((file) => formData.append('images', file));
+      const endpoint = editMode ? "edit-prescription" : "add-prescription";
+      const payload = {
+        appointmentId: appointment._id,
+        docId: appointment.docId,
+        text: tempText,
+      };
 
-      const { data } = await axios.post(`${backendUrl}/api/doctor/${endpoint}`, formData, {
-        headers: { dtoken: dToken },
-      });
+      if (entryIndex !== null) payload.entryIndex = entryIndex;
+
+      const { data } = await axios.post(
+        `${backendUrl}/api/doctor/${endpoint}`,
+        payload,
+        {
+          headers: { "Content-Type": "application/json", dtoken: dToken },
+        }
+      );
 
       if (data.success) {
-        toast.success(editMode ? 'Prescription updated!' : 'Prescription added!');
+        toast.success(editMode ? "Prescription updated!" : "Prescription added!");
         setActivePrescription(null);
-        setTempText('');
-        setTempImages([]);
+        setTempText("");
         setEditMode(false);
         getAppointments();
       } else {
-        toast.error(data.message || 'Failed to save prescription');
+        toast.error(data.message || "Failed to save prescription");
       }
     } catch (error) {
-      console.error('Prescription Error:', error);
-      toast.error('Error saving prescription');
+      console.error("Prescription Error:", error);
+      toast.error("Error saving prescription");
     }
   };
 
@@ -66,7 +76,7 @@ const DoctorAppointments = () => {
 
       {/* Appointments Container */}
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-y-auto max-h-[80vh]">
-        {/* Header Row (desktop only) */}
+        {/* Header Row */}
         <div className="hidden md:grid grid-cols-[0.5fr_2fr_1.2fr_1fr_1.2fr] gap-2 py-3 px-6 border-b bg-gray-50 font-semibold text-gray-600 text-sm">
           <p>#</p>
           <p>Patient</p>
@@ -85,27 +95,29 @@ const DoctorAppointments = () => {
               key={item._id}
               className="border-b last:border-none px-4 sm:px-6 py-5 hover:bg-gray-50 transition duration-150"
             >
-              {/* Responsive Info Section */}
+              {/* Info */}
               <div className="flex flex-col md:grid md:grid-cols-[0.5fr_2fr_1.2fr_1fr_1.2fr] gap-3 md:items-center text-gray-700">
-                {/* Index */}
                 <p className="hidden md:block font-medium">{index + 1}</p>
 
                 {/* Patient Info */}
                 <div className="flex items-center gap-3">
                   <img
                     src={item.userData?.image || assets.default_user}
-                    alt={`${item.userData?.name || 'Patient'} profile`}
+                    alt={item.userData?.name || "Patient"}
                     className="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm"
                   />
                   <div>
-                    <p className="font-semibold text-gray-900">{item.userData?.name || 'N/A'}</p>
+                    <p className="font-semibold text-gray-900">
+                      {item.userData?.name || "N/A"}
+                    </p>
                     <p className="text-xs text-gray-400">#{item._id.slice(-6)}</p>
                   </div>
                 </div>
 
                 {/* Date & Time */}
                 <p className="text-sm">
-                  {slotDateFormat(item.slotDate)}, <span className="text-gray-500">{item.slotTime}</span>
+                  {slotDateFormat(item.slotDate)},{" "}
+                  <span className="text-gray-500">{item.slotTime}</span>
                 </p>
 
                 {/* Fees */}
@@ -128,7 +140,9 @@ const DoctorAppointments = () => {
                       <img
                         onClick={() => {
                           if (!hasPrescription) {
-                            toast.warning('Please add a prescription before marking as completed!');
+                            toast.warning(
+                              "Please add a prescription before marking as completed!"
+                            );
                             return;
                           }
                           completeAppointment(item._id);
@@ -142,10 +156,10 @@ const DoctorAppointments = () => {
                   ) : (
                     <span
                       className={`text-sm font-semibold ${
-                        item.isCompleted ? 'text-green-600' : 'text-red-500'
+                        item.isCompleted ? "text-green-600" : "text-red-500"
                       }`}
                     >
-                      {item.isCompleted ? '✅ Completed' : '❌ Cancelled'}
+                      {item.isCompleted ? "✅ Completed" : "❌ Cancelled"}
                     </span>
                   )}
                 </div>
@@ -153,6 +167,7 @@ const DoctorAppointments = () => {
 
               {/* Prescription Section */}
               <div className="mt-4 ml-1 md:ml-6">
+                {/* Existing Prescriptions */}
                 {item.prescription?.entries?.length > 0 && (
                   <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-xl border border-gray-200 mb-4">
                     <p className="font-semibold text-gray-700 mb-3 flex items-center gap-1">
@@ -164,34 +179,28 @@ const DoctorAppointments = () => {
                         key={idx}
                         className="p-4 border rounded-xl bg-white shadow-sm hover:shadow-md transition space-y-2"
                       >
-                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{entry.text || 'No text provided'}</p>
-
-                        {/* Display prescription images */}
-                        {entry.images?.length > 0 && (
-                          <div className="flex flex-wrap gap-3 mt-2">
-                            {entry.images.map((imgUrl, i) => (
-                              <img
-                                key={i}
-                                src={imgUrl} // Ensure backend returns full URL
-                                alt={`Prescription ${i + 1}`}
-                                className="w-24 h-24 object-cover rounded-lg border shadow-sm hover:scale-105 transition"
-                              />
-                            ))}
-                          </div>
-                        )}
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                          {entry.text || "No text provided"}
+                        </p>
 
                         <p className="text-xs text-gray-400 italic">
                           {entry.isEdited
-                            ? `✏️ Edited on ${new Date(entry.updatedAt).toLocaleString()}`
-                            : `🕒 Added on ${new Date(entry.createdAt).toLocaleString()}`}
+                            ? `✏️ Edited on ${new Date(
+                                entry.updatedAt
+                              ).toLocaleString()}`
+                            : `🕒 Added on ${new Date(
+                                entry.createdAt
+                              ).toLocaleString()}`}
                         </p>
 
                         {!isInactive && (
                           <button
                             onClick={() => {
-                              setActivePrescription({ appointment: item, entryIndex: idx });
-                              setTempText(entry.text || '');
-                              setTempImages([]); // Images can only be re-uploaded, not modified inline
+                              setActivePrescription({
+                                appointment: item,
+                                entryIndex: idx,
+                              });
+                              setTempText(entry.text || "");
                               setEditMode(true);
                             }}
                             className="text-blue-600 text-xs font-semibold underline hover:text-blue-800"
@@ -208,9 +217,11 @@ const DoctorAppointments = () => {
                 {!isInactive && !activePrescription && (
                   <button
                     onClick={() => {
-                      setActivePrescription({ appointment: item, entryIndex: null });
-                      setTempText('');
-                      setTempImages([]);
+                      setActivePrescription({
+                        appointment: item,
+                        entryIndex: null,
+                      });
+                      setTempText("");
                       setEditMode(false);
                     }}
                     className="text-green-600 text-sm font-semibold flex items-center gap-2 hover:text-green-800 transition"
@@ -230,29 +241,25 @@ const DoctorAppointments = () => {
                       rows="3"
                     ></textarea>
 
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={(e) => setTempImages([...e.target.files])}
-                      className="mt-2 text-sm"
-                    />
-
                     <div className="flex flex-wrap gap-3 mt-3">
                       <button
                         onClick={() =>
-                          handlePrescriptionSubmit(activePrescription.appointment, activePrescription.entryIndex)
+                          handlePrescriptionSubmit(
+                            activePrescription.appointment,
+                            activePrescription.entryIndex
+                          )
                         }
                         className="bg-primary hover:bg-primary/90 text-white text-sm px-4 py-2 rounded-lg shadow-sm transition"
                       >
-                        {editMode ? '💾 Update Prescription' : '➕ Save Prescription'}
+                        {editMode
+                          ? "💾 Update Prescription"
+                          : "➕ Save Prescription"}
                       </button>
 
                       <button
                         onClick={() => {
                           setActivePrescription(null);
-                          setTempText('');
-                          setTempImages([]);
+                          setTempText("");
                           setEditMode(false);
                         }}
                         className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm px-4 py-2 rounded-lg transition"
@@ -272,5 +279,3 @@ const DoctorAppointments = () => {
 };
 
 export default DoctorAppointments;
-
-
