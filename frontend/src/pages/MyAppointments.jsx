@@ -26,14 +26,30 @@ const MyAppointments = () => {
   useEffect(() => {
     fetch("/image.jpg")
       .then((res) => res.blob())
-      .then((blob) => toBase64(blob, (res) => setLogoBase64(res)));
+      .then((blob) => toBase64(blob, (res) => setLogoBase64(res)))
+      .catch(() => console.warn("Logo image not found or failed to load."));
   }, []);
 
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   const slotDateFormat = (slotDate) => {
     const dateArray = slotDate.split("_");
-    return `${dateArray[0]} ${months[Number(dateArray[1])] || dateArray[1]} ${dateArray[2]}`;
+    return `${dateArray[0]} ${months[Number(dateArray[1])] || dateArray[1]} ${
+      dateArray[2]
+    }`;
   };
 
   const getUserAppointments = async () => {
@@ -100,10 +116,11 @@ const MyAppointments = () => {
 
     tempDiv.innerHTML = `
       <div style="text-align:center; margin-bottom:24px;">
-        ${logoBase64
-        ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
-        : ""
-      }
+        ${
+          logoBase64
+            ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
+            : ""
+        }
         <h1 style="margin:0; font-size:30px; color:#0A3D62; font-weight:700;">CareBridge</h1>
         <p style="margin:4px 0 0; color:#3C6382; font-size:13px;">Digital E-Prescription Platform</p>
         <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
@@ -120,7 +137,9 @@ const MyAppointments = () => {
         <div style="width:48%;">
           <h3 style="margin:0; font-size:15px; color:#0A3D62;">Patient Information</h3>
           <p><strong>Name:</strong> ${safe(patientData?.name || userData?.name)}</p>
-          <p><strong>Age / Gender:</strong> ${safe(patientData?.age || userData?.age)} / ${safe(patientData?.gender || userData?.gender)}</p>
+          <p><strong>Age / Gender:</strong> ${safe(
+            patientData?.age || userData?.age
+          )} / ${safe(patientData?.gender || userData?.gender)}</p>
         </div>
       </div>
 
@@ -128,13 +147,13 @@ const MyAppointments = () => {
         <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
         <ul style="margin-top:16px; padding-left:20px; list-style-type:disc;">
           ${prescription.entries
-        .map(
-          (entry, idx) => `
+            .map(
+              (entry) => `
               <li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">
                 ${safe(entry.text)}
               </li>`
-        )
-        .join("")}
+            )
+            .join("")}
         </ul>
       </div>
     `;
@@ -147,7 +166,10 @@ const MyAppointments = () => {
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
     pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
     pdf.save(
-      `Prescription_${doctorName.replace(/\s/g, "_")}_${slotDate.replace(/ /g, "_")}.pdf`
+      `Prescription_${doctorName.replace(/\s/g, "_")}_${slotDate.replace(
+        / /g,
+        "_"
+      )}.pdf`
     );
     document.body.removeChild(tempDiv);
   };
@@ -158,9 +180,10 @@ const MyAppointments = () => {
       setLoadingAi(true);
       setShowAiModal(true);
       const fullText = prescription.entries.map((e) => e.text).join("\n\n");
-      const { data } = await axios.post(`${backendUrl}/api/ai/explain-prescription`, {
-        prescriptionText: fullText,
-      });
+      const { data } = await axios.post(
+        `${backendUrl}/api/ai/explain-prescription`,
+        { prescriptionText: fullText }
+      );
       const explanation = data.explanation || "No summary generated.";
       setAiSummary(formatSummary(explanation));
     } catch (error) {
@@ -214,9 +237,13 @@ const MyAppointments = () => {
             {/* 🔹 Action Buttons */}
             <div className="mt-3 flex gap-3 items-center">
               {item.cancelled ? (
-                <span className="text-red-500 font-semibold text-sm">❌ Cancelled</span>
+                <span className="text-red-500 font-semibold text-sm">
+                  ❌ Cancelled
+                </span>
               ) : item.isCompleted ? (
-                <span className="text-green-600 font-semibold text-sm">✅ Completed</span>
+                <span className="text-green-600 font-semibold text-sm">
+                  ✅ Completed
+                </span>
               ) : (
                 <button
                   onClick={() => handleCancelAppointment(item._id)}
