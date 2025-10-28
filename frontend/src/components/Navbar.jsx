@@ -130,7 +130,7 @@ const Navbar = () => {
               Login
             </button>
             <button
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/login")}
               className="bg-green-500 text-white px-5 py-2 rounded-full font-medium hover:bg-green-600 transition"
             >
               Create Account
