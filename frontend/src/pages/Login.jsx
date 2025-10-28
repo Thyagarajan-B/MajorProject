@@ -113,15 +113,6 @@ const Login = () => {
           {state === 'Sign Up' ? 'Create account' : 'Login'}
         </button>
 
-        {/* ✅ Google Login Button */}
-        <button
-          type="button"
-          onClick={handleGoogleLogin}
-          className='bg-red-500 text-white w-full py-2 my-2 rounded-md text-base'
-        >
-          Continue with Google
-        </button>
-
         {/* Admin Login Redirect */}
         <button
           type="button"
