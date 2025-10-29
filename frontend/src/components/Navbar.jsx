@@ -149,9 +149,8 @@ const Navbar = () => {
 
       {/* Mobile Menu Drawer */}
       <div
-        className={`fixed top-0 right-0 h-full bg-white z-40 shadow-lg transition-all duration-300 overflow-hidden ${
-          showMenu ? "w-64" : "w-0"
-        }`}
+        className={`fixed top-0 right-0 h-full bg-white z-40 shadow-lg transition-all duration-300 overflow-hidden ${showMenu ? "w-64" : "w-0"
+          }`}
       >
         <div className="flex items-center justify-between px-5 py-6 border-b">
           <img src={assets.logo} className="w-32 object-contain" alt="Logo" />

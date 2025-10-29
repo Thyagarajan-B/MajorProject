@@ -4,8 +4,17 @@ import { generateAIResponse } from "../utils/gemini.js";
 export const explainPrescription = async (req, res) => {
   try {
     const { prescriptionText } = req.body;
-    const prompt = `Explain this prescription in simple terms for a patient: ${prescriptionText}. 
-Keep it short, friendly, and easy to understand.`;
+    const prompt = `You are a medical assistant. Explain this prescription in simple words for a patient.
+
+Tell what each medicine/tablet/syrup is used for (its purpose) in a very simple way.
+Do NOT give dosage or duration (no "take twice a day" or "for 5 days" type instructions).
+Provide helpful recovery tips based on the illness — include safe home remedies, foods to eat, foods to avoid, and lifestyle advice.
+Keep the tone friendly, supportive, and easy to understand.
+Avoid medical jargon — explain like talking to a normal person.
+Do not add extra medicines or medical advice outside the prescription.
+Prescription: ${prescriptionText}
+`;
+
 
     const explanation = await generateAIResponse(prompt);
     res.json({ explanation });

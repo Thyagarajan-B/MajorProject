@@ -46,10 +46,22 @@ const MyAppointments = () => {
   ];
 
   const slotDateFormat = (slotDate) => {
-    const dateArray = slotDate.split("_");
-    return `${dateArray[0]} ${months[Number(dateArray[1])] || dateArray[1]} ${
-      dateArray[2]
-    }`;
+    // if already formatted (contains space and month name), return as-is
+    if (typeof slotDate === "string" && slotDate.includes(" ")) return slotDate;
+
+    // expected raw format: "DD_MM_YYYY" or "DD_M_YYYY"
+    const dateArray = String(slotDate).split("_");
+    const day = dateArray[0] || "";
+    const monthNum = Number(dateArray[1]); // 1..12
+    const year = dateArray[2] || "";
+
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    ];
+
+    const monthName = months[(monthNum || 1) - 1] || dateArray[1] || "";
+    return `${day} ${monthName} ${year}`;
   };
 
   const getUserAppointments = async () => {
@@ -93,10 +105,11 @@ const MyAppointments = () => {
   const handleDownloadPrescription = async (
     prescription,
     doctorName,
-    slotDate,
+    slotDate /* can be raw like "30_11_2025" or already formatted "30 Nov 2025" */,
     slotTime,
     patientData = {}
   ) => {
+    // build the HTML content (same as before, but we'll compute displayDate and filenameDate safely)
     const tempDiv = document.createElement("div");
     tempDiv.style.width = "700px";
     tempDiv.style.padding = "20px 40px 40px";
@@ -114,67 +127,105 @@ const MyAppointments = () => {
         .replace(/>/g, "&gt;")
         .replace(/\n/g, "<br>");
 
+    // compute a display date (readable) and a filename-safe ISO date (YYYY-MM-DD)
+    let displayDate = slotDateFormat(slotDate);
+    let filenameDate = "";
+
+    if (String(slotDate).includes("_")) {
+      const parts = String(slotDate).split("_");
+      const dd = parts[0].padStart(2, "0");
+      const mm = String((Number(parts[1]) || 1)).padStart(2, "0");
+      const yyyy = parts[2] || "";
+      // make ISO like YYYY-MM-DD (if we can)
+      filenameDate = yyyy ? `${yyyy}-${mm}-${dd}` : `${dd}-${mm}-${yyyy}`;
+    } else {
+      // attempt to parse formatted date (like "30 Nov 2025")
+      const m = new Date(displayDate);
+      if (!isNaN(m)) {
+        const yyyy = m.getFullYear();
+        const mm = String(m.getMonth() + 1).padStart(2, "0");
+        const dd = String(m.getDate()).padStart(2, "0");
+        filenameDate = `${yyyy}-${mm}-${dd}`;
+      } else {
+        // fallback: sanitize displayDate
+        filenameDate = displayDate.replace(/\s+/g, "_");
+      }
+    }
+
+    // safe filename for doctor name
+    const safeDoc = (doctorName || "Doctor").replace(/\s+/g, "_").replace(/[^\w-]/g, "");
+
     tempDiv.innerHTML = `
-      <div style="text-align:center; margin-bottom:24px;">
-        ${
-          logoBase64
-            ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
-            : ""
-        }
-        <h1 style="margin:0; font-size:30px; color:#0A3D62; font-weight:700;">CareBridge</h1>
-        <p style="margin:4px 0 0; color:#3C6382; font-size:13px;">Digital E-Prescription Platform</p>
-        <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
-      </div>
+    <div style="text-align:center; margin-bottom:24px;">
+      ${logoBase64
+        ? `<img src="${logoBase64}" alt="Logo" style="height:60px; margin-bottom:6px; display:block; margin-left:auto; margin-right:auto;">`
+        : ""
+      }
+      <h1 style="margin:0; font-size:30px; color:#0A3D62; font-weight:700;">CareBridge</h1>
+      <p style="margin:4px 0 0; color:#3C6382; font-size:13px;">Digital E-Prescription Platform</p>
+      <hr style="border:none; border-top:3px solid #0A3D62; margin:16px auto 0; width:90%;">
+    </div>
 
-      <div style="display:flex; justify-content:space-between; margin-top:18px; background:#EAF0F6; padding:16px 20px; border-radius:10px;">
-        <div style="width:48%;">
-          <h3 style="margin:0; font-size:15px; color:#0A3D62;">Doctor Information</h3>
-          <p><strong>Name:</strong> ${safe(doctorName)}</p>
-          <p><strong>Speciality:</strong> ${safe(prescription.speciality || "General Physician")}</p>
-          <p><strong>Date:</strong> ${safe(slotDate)}</p>
-          <p><strong>Time:</strong> ${safe(slotTime)}</p>
-        </div>
-        <div style="width:48%;">
-          <h3 style="margin:0; font-size:15px; color:#0A3D62;">Patient Information</h3>
-          <p><strong>Name:</strong> ${safe(patientData?.name || userData?.name)}</p>
-          <p><strong>Age / Gender:</strong> ${safe(
-            patientData?.age || userData?.age
-          )} / ${safe(patientData?.gender || userData?.gender)}</p>
-        </div>
+    <div style="display:flex; justify-content:space-between; margin-top:18px; background:#EAF0F6; padding:16px 20px; border-radius:10px;">
+      <div style="width:48%;">
+        <h3 style="margin:0; font-size:15px; color:#0A3D62;">Doctor Information</h3>
+        <p><strong>Name:</strong> ${safe(doctorName)}</p>
+        <p><strong>Speciality:</strong> ${safe(prescription.speciality || "General Physician")}</p>
+        <p><strong>Date:</strong> ${safe(displayDate)}</p>
+        <p><strong>Time:</strong> ${safe(slotTime)}</p>
       </div>
+      <div style="width:48%;">
+        <h3 style="margin:0; font-size:15px; color:#0A3D62;">Patient Information</h3>
+        <p><strong>Name:</strong> ${safe(patientData?.name || userData?.name)}</p>
+        <p><strong>Age / Gender:</strong> ${safe(patientData?.age || userData?.age)} / ${safe(patientData?.gender || userData?.gender)}</p>
+      </div>
+    </div>
 
-      <div style="margin-top:32px;">
-        <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
-        <ul style="margin-top:16px; padding-left:20px; list-style-type:disc;">
-          ${prescription.entries
-            .map(
-              (entry) => `
-              <li style="margin-bottom:10px; font-size:14px; color:#2f3a4c;">
-                ${safe(entry.text)}
-              </li>`
-            )
-            .join("")}
-        </ul>
+    <div style="margin-top:32px;">
+      <h2 style="font-size:18px; color:#0A3D62; border-bottom:2px solid #0A3D62; padding-bottom:6px;">Prescription Details</h2>
+      <div style="margin-top:16px; font-size:14px; color:#2f3a4c; line-height:1.7;">
+        ${prescription.entries.map(e => `<p style="margin-bottom:10px;">${safe(e.text)}</p>`).join("")}
       </div>
-    `;
+    </div>
+  `;
 
     document.body.appendChild(tempDiv);
+
+    // Render canvas at higher scale for quality, then paginate correctly
     const canvas = await html2canvas(tempDiv, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL("image/png");
+
+    // jsPDF units in points for A4: width ~595.28, height ~841.89
     const pdf = new jsPDF("p", "pt", "a4");
-    const imgWidth = 595;
+    const pageWidth = 595.28;
+    const pageHeight = 841.89;
+
+    const imgWidth = pageWidth;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    // first page
     pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
-    pdf.save(
-      `Prescription_${doctorName.replace(/\s/g, "_")}_${slotDate.replace(
-        / /g,
-        "_"
-      )}.pdf`
-    );
+    heightLeft -= pageHeight;
+
+    // subsequent pages
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    // final filename: Prescription_DoctorName_YYYY-MM-DD.pdf (fallback if date not parseable)
+    const filename = `Prescription_${safeDoc}_${filenameDate || "date"}.pdf`;
+
+    pdf.save(filename);
     document.body.removeChild(tempDiv);
   };
-  // -----------------------------------------------------------------
 
+  // handling AI summary 
   const handleAISummary = async (prescription) => {
     try {
       setLoadingAi(true);
@@ -237,12 +288,12 @@ const MyAppointments = () => {
             {/* 🔹 Action Buttons */}
             <div className="mt-3 flex gap-3 items-center">
               {item.cancelled ? (
-                <span className="text-red-500 font-semibold text-sm">
-                  ❌ Cancelled
-                </span>
+                <span className="text-red-500 font-semibold text-sm">❌ Cancelled</span>
               ) : item.isCompleted ? (
-                <span className="text-green-600 font-semibold text-sm">
-                  ✅ Completed
+                <span className="text-green-600 font-semibold text-sm">✅ Completed</span>
+              ) : item.prescription?.entries?.length > 0 ? (
+                <span className="text-purple-600 font-semibold text-sm">
+                  Prescription Provided
                 </span>
               ) : (
                 <button
@@ -253,6 +304,7 @@ const MyAppointments = () => {
                 </button>
               )}
             </div>
+
 
             {/* Prescription Section */}
             {item.prescription?.entries?.length > 0 && (
@@ -291,21 +343,26 @@ const MyAppointments = () => {
       {/* Prescription Modal */}
       {selectedPrescription && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[500px] max-h-[80vh] overflow-y-auto">
+          <div className="bg-white p-5 rounded-lg w-[90%] sm:w-[500px] max-h-[80vh] overflow-y-auto shadow-lg">
             <h3 className="text-lg font-semibold mb-3 text-gray-800 text-center">
               Prescription
             </h3>
-            <ul className="list-disc pl-4 space-y-2 text-sm text-gray-600">
+
+            <div className="bg-gray-50 p-3 rounded border whitespace-pre-line text-sm text-gray-700 leading-relaxed">
               {selectedPrescription.entries.map((entry, idx) => (
-                <li key={idx}>{entry.text || "No details provided"}</li>
+                <p key={idx} className="mb-1">
+                  {entry.text}
+                </p>
               ))}
-            </ul>
+            </div>
+
             <button
               onClick={() => handleAISummary(selectedPrescription)}
               className="mt-4 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm w-full"
             >
               Generate AI Summary
             </button>
+
             <button
               onClick={() => setSelectedPrescription(null)}
               className="mt-2 bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded text-sm w-full"
@@ -315,6 +372,8 @@ const MyAppointments = () => {
           </div>
         </div>
       )}
+
+
 
       {/* AI Summary Modal */}
       {showAiModal && (
